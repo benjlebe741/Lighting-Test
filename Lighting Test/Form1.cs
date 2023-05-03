@@ -13,6 +13,7 @@ namespace Lighting_Test
 {
     public partial class Form1 : Form
     {
+        #region GLOBAL VARIABLES
         //Shorthand
         int x = 0;
         int y = 1;
@@ -27,8 +28,12 @@ namespace Lighting_Test
         List<Rectangle> currentTilePixels = new List<Rectangle>();
         List<int> currentTilePixelDepths = new List<int>();
 
+        //all lights on screen
+        List<Light> lightList = new List<Light>();
+
         int tileWidth = 45;
         double[] rgb = { 0, 0, 0 };
+        Light closestLight = new Light(new Rectangle(5800, 3200, 0, 0), new int[] { 0, 0, 0 }, 0, 0, 0, 0, 0);
         //storing current Level
         int currentLevel;
 
@@ -63,9 +68,152 @@ namespace Lighting_Test
 
         //How large is a row of levels? (how many levels are in a row of levels?) 
         int levelLayoutWidth = 3;
-        #region ALL LEVELS:
-        int[][] levels = new int[][]
+        #endregion
+
+        #region LEVEL DEPTHS:
+        int[][] levelDepths = new int[][]
                {
+                new int[]
+                {
+                30,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+                0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+                0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                0,0,2,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,1,1,0,0,0,
+                0,0,2,3,3,3,3,2,2,3,3,4,5,6,5,4,3,2,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,1,2,3,3,2,2,1,2,3,3,4,5,4,3,2,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+            },
+                 new int[]
+                {
+                30,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                0,0,7,7,7,1,1,10,10,100,1,1,1,1,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,
+                0,0,7,7,7,1,1,10,10,100,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,
+                0,0,7,7,7,40,100,100,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,-30,-1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,10,20,30,40,50,60,70,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                0,0,1,13,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,7,13,13,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,7,7,7,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            },
+
+        new int[]
+                {
+                30,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,
+                0,0,1,1,1,1,1,7,7,7,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,
+                0,0,1,1,1,1,1,7,7,7,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+            },
+        //NEXT LAYER
+    new int[]
+                {
+                30,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,1,1,7,1,1,1,1,1,1,1,1,1,0,7,1,7,1,1,1,1,0,0,0,0,0,0,0,0,
+                0,0,1,1,7,1,1,7,7,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,
+                0,0,7,7,7,1,1,7,7,7,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,1,1,1,7,1,7,1,1,1,7,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                0,1,1,1,7,1,7,1,1,1,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            },
+     new int[]
+                {
+                30,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                0,0,1,1,7,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,
+                0,0,1,1,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,
+                0,0,7,7,7,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                1,1,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            },
+new int[]
+       {
+                30,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,1,1,7,1,1,1,1,1,1,1,1,1,0,7,1,7,1,1,1,1,0,0,0,0,0,0,0,0,
+                0,0,1,1,7,1,1,7,7,7,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
+                0,0,7,7,7,1,1,7,7,7,1,1,1,1,0,7,1,1,1,1,1,1,1,1,0,1,1,0,0,0,
+                0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,
+                0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,0,0,0,1,1,1,1,1,1,0,1,1,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,0,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+            },
+};
+        #endregion
+
+        #region LEVEL TILES
+        int[][] levelTiles = new int[][]
+       {
                 new int[]
                 {
                 30,
@@ -76,15 +224,15 @@ namespace Lighting_Test
                 4,4,1,1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
                 4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,4,4,4,
                 4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,1,1,1,1,1,1,1,4,4,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,4,4,4,
-                4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
-                4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
-                4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                4,4,1,1,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,1,1,4,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
+                4,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
+                4,6,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,4,
+                4,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,7,1,1,1,4,4,4,4,4,4,4,
+                4,4,4,4,4,4,4,4,4,3,3,3,3,4,4,4,4,4,4,7,1,1,4,4,4,4,4,4,4,4,
+                4,4,9,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                4,6,3,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                4,4,3,2,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,1,1,4,4,4,
+                4,6,3,3,3,2,3,3,3,3,6,6,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
+                4,4,3,2,2,3,2,2,3,3,6,6,6,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
                 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
                 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
             },
@@ -99,7 +247,7 @@ namespace Lighting_Test
                 4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,1,4,4,4,
                 4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
                 4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,4,4,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
+                4,4,7,7,7,7,7,7,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
                 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
                 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
                 1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -202,6 +350,7 @@ new int[]
             },
 };
         #endregion
+
         #region ALL TILE PATTERNS:
         int[][] tilePatterns = new int[][]
         {
@@ -213,15 +362,15 @@ new int[]
         },
         new int[]{
            3,
-              10,10,10,
-            16,100,16,
-            10,10,10,
+              6,6,6,
+            10,100,10,
+            6,6,6,
         },
          new int[]{
             3,
-            1,0,1,
-            1,1,1,
-            1,0,1,
+            2,2,2,
+            1,1,2,
+            1,2,2,
         },
              new int[]{
             3,
@@ -231,41 +380,74 @@ new int[]
         },
         new int[]{
             3,
-            1,0,0,
-            0,1,0,
-            1,0,0,
+            1,1,1,
+            1,0,1,
+            1,1,1,
         },
           new int[]{
             3,
-            1,0,0,
-            0,1,0,
-            1,0,0,
-        },
-            new int[]{
-            3,
-            1,0,0,
-            0,1,0,
-            1,0,0,
+     1,0,1,
+     1,3,1,
+     1,1,1,
         },
               new int[]{
             3,
-            1,0,0,
-            0,1,0,
-            1,0,0,
+            1,0,1,
+            2,3,2,
+            3,2,0,
+        },
+              new int[]{
+            15,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
+            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
+            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
+            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
+            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
+            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
+            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        },
+            new int[]{
+            3,
+            3,2,4,
+            2,3,2,
+            1,1,0,
+        },
+               new int[]{
+            3,
+            0,1,8,
+            1,5,6,
+            10,13,12,
         },
         };
         #endregion
+
+        #region Load
         public Form1()
         {
             InitializeComponent();
             player = new Rectangle(580, 320, 0, 0);
+            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 100));
             playerXCheck = new Rectangle(0, 0, 0, 0);
             playerYCheck = new Rectangle(0, 0, 0, 0);
 
-            createLevel(levels[0], tileWidth);
+            //lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100));
+            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100));
+            lightList.Add(new Light(new Rectangle(880, 220, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 100));
+
+            createLevel(levelTiles[0], tileWidth);
             currentLevel = 0;
         }
+        #endregion
 
+        #region Game Timer
         private void gameTimer_Tick(object sender, EventArgs e)
         {
             #region Determing All Object Directions
@@ -303,15 +485,15 @@ new int[]
 
             for (int n = 0; n < currentTiles.Count; n++)
             {
-                if (playerYCheck.IntersectsWith(currentTiles[n]) && levels[currentLevel][n] == 4)
+                if (playerYCheck.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
                 {
                     //TOP WALL
-                    if (playerYCheck.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && levels[currentLevel][n + 30] != 4)
+                    if (playerYCheck.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && levelDepths[currentLevel][n + 30] != 0)
                     {
                         canMoveUpDownLeftRight[up] = -1;
                     }
                     //BOTTOM WALL
-                    if (playerYCheck.Y <= currentTiles[n].Y && n - 30 >= 0 && levels[currentLevel][n - 30] != 4)
+                    if (playerYCheck.Y <= currentTiles[n].Y && n - 30 >= 0 && levelDepths[currentLevel][n - 30] != 0)
                     {
 
                         canMoveUpDownLeftRight[down] = 1;
@@ -319,39 +501,39 @@ new int[]
                     }
                 }
 
-                if (playerXCheck.IntersectsWith(currentTiles[n]) && levels[currentLevel][n] == 4)
+                if (playerXCheck.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
                 {
                     //LEFT WALL
-                    if (playerXCheck.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && levels[currentLevel][n + 1] != 4)
+                    if (playerXCheck.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && levelDepths[currentLevel][n + 1] != 0)
                     {
                         canMoveUpDownLeftRight[left] = -1;
                     }
                     //RIGHT WALL
-                    if (playerXCheck.X <= currentTiles[n].X && n - 1 >= 0 && levels[currentLevel][n - 1] != 4)
+                    if (playerXCheck.X <= currentTiles[n].X && n - 1 >= 0 && levelDepths[currentLevel][n - 1] != 0)
                     {
                         canMoveUpDownLeftRight[right] = 1;
                     }
                 }
 
-                if (player.IntersectsWith(currentTiles[n]) && levels[currentLevel][n] == 4)
+                if (player.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
                 {
                     //TOP WALL
-                    if (player.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && levels[currentLevel][n + 30] != 4)
+                    if (player.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && levelDepths[currentLevel][n + 30] != 0)
                     {
                         player.Y += 1;
                     }
                     //BOTTOM WALL
-                    if (player.Y <= currentTiles[n].Y && n - 30 >= 0 && levels[currentLevel][n - 30] != 4)
+                    if (player.Y <= currentTiles[n].Y && n - 30 >= 0 && levelTiles[currentLevel][n - 30] != 0)
                     {
                         player.Y += -1;
                     }
                     //LEFT WALL
-                    if (player.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && levels[currentLevel][n + 1] != 4)
+                    if (player.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && levelDepths[currentLevel][n + 1] != 0)
                     {
                         player.X += 1;
                     }
                     //RIGHT WALL
-                    if (player.X <= currentTiles[n].X && n - 1 >= 0 && levels[currentLevel][n - 1] != 4)
+                    if (player.X <= currentTiles[n].X && n - 1 >= 0 && levelDepths[currentLevel][n - 1] != 0)
                     {
                         player.X += -1;
                     }
@@ -363,34 +545,38 @@ new int[]
             {
                 player.Y = this.Height - player.Height;
                 currentLevel += levelLayoutWidth * -1;
-                createLevel(levels[currentLevel], tileWidth);
+                createLevel(levelTiles[currentLevel], tileWidth);
             }
             if (player.Y >= this.Height - player.Height / 2)
             {
                 player.Y = player.Height;
                 currentLevel += levelLayoutWidth;
-                createLevel(levels[currentLevel], tileWidth);
+                createLevel(levelTiles[currentLevel], tileWidth);
             }
             if (player.X <= player.Height / 2)
             {
                 player.X = this.Width - player.Height;
                 currentLevel += -1;
-                createLevel(levels[currentLevel], tileWidth);
+                createLevel(levelTiles[currentLevel], tileWidth);
             }
             if (player.X >= this.Width - player.Height / 2)
             {
                 player.X = player.Height;
                 currentLevel += 1;
-                createLevel(levels[currentLevel], tileWidth);
+                createLevel(levelTiles[currentLevel], tileWidth);
             }
             #endregion
 
-            //My info
+            //Tracking player accessories
             playerXCheck.Location = new Point(player.X - 1, player.Y);
             playerYCheck.Location = new Point(player.X, player.Y - 1);
-            label1.Text = $"{WSAD[0]} {WSAD[1]} {WSAD[2]} {WSAD[3]}\n{xYDirection[0]} {xYDirection[1]}\n{canMoveUpDownLeftRight[up]} {canMoveUpDownLeftRight[down]} {canMoveUpDownLeftRight[left]} {canMoveUpDownLeftRight[right]} ";
+            lightList[0].body.Location = new Point(player.X + (player.Width / 2), player.Y + (player.Width / 2));
+
+            //My info
+            //label1.Text = $"{WSAD[0]} {WSAD[1]} {WSAD[2]} {WSAD[3]}\n{xYDirection[0]} {xYDirection[1]}\n{canMoveUpDownLeftRight[up]} {canMoveUpDownLeftRight[down]} {canMoveUpDownLeftRight[left]} {canMoveUpDownLeftRight[right]} ";
             Refresh();
         }
+        #endregion
 
         #region Key Checks
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -417,34 +603,46 @@ new int[]
         }
         #endregion
 
+        #region Paint
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
+            if (currentLevel == 0)
+            {
+                int x = 8;
+            }
             for (int n = 0; n < currentTilePixels.Count; n++)
             {
-
                 for (int num = 0; num < 3; num++)
                 {
                     if (currentTilePixelDepths[n] > 0)
                     {
-                        rgb[num] = (20000 / GetLength(player, currentTilePixels[n]) / currentTilePixelDepths[n]) - (num * 30) * (num + 1);//at the end here im just playing aroung with color at ( - (num * 30) * (num + 1); ), should change!
+                        //DETERMINE THE ACTIVE LIGHT SOURCE FOR THE PIXEL
+                        foreach (Light light in lightList)
+                        {
+                            if (GetLength(light.body, currentTilePixels[n]) < GetLength(closestLight.body, currentTilePixels[n]))
+                            { 
+                                closestLight = light;
+                            }
+                        }
+                     
+
+                        rgb[num] = (20000 / GetLength(closestLight.body, currentTilePixels[n]) / currentTilePixelDepths[n]) + closestLight.rgbAffectors[num];
                     }
-               
-                    if (rgb[num] > 100) { rgb[num] += 20; }
-                    if (rgb[num] > 220) { rgb[num] = 220; }
-                    if (rgb[num] < 40) { rgb[num] -= 12; }
-                    if (rgb[num] < 5) { rgb[num] = 0; }
+
+                    if (rgb[num] > closestLight.lightenPoint) { rgb[num] += 20; }
+                    if (rgb[num] > closestLight.maxBright) { rgb[num] = closestLight.maxBright; }
+                    if (rgb[num] < closestLight.darkenPoint) { rgb[num] -= 12; }
+                    if (rgb[num] < closestLight.blackPoint) { rgb[num] = 0; }
                 }
 
                 try { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(Convert.ToInt32(rgb[0]), Convert.ToInt32(rgb[1]), Convert.ToInt32(rgb[2]))), currentTilePixels[n]); }
                 catch { }
-
             }
-
-
             e.Graphics.FillRectangle(whiteBrush, playerXCheck);
             e.Graphics.FillRectangle(whiteBrush, playerYCheck);
             e.Graphics.FillRectangle(redBrush, player);
         }
+        #endregion
 
         #region Create Level
         private void createLevel(int[] level, int rectangleDimension)
@@ -481,12 +679,12 @@ new int[]
                     int tilePixelY = 0;
                     int pixelDimension = rectangleDimension / tilePatterns[thisTile][0];
 
-                    for (int m = 0; m < tilePatterns[0].Length; m++)
+                    for (int m = 0; m < tilePatterns[thisTile].Length; m++)
                     {
                         int tilePixelX = m;
-                        while (tilePixelX > tilePatterns[0][0])
+                        while (tilePixelX > tilePatterns[thisTile][0])
                         {
-                            tilePixelX -= tilePatterns[0][0];
+                            tilePixelX -= tilePatterns[thisTile][0];
                         }
 
                         int pixelX = (tilePixelX - 1) * pixelDimension;
@@ -495,9 +693,9 @@ new int[]
                         if (m > 0)
                         {
                             currentTilePixels.Add(new Rectangle(pixelX + rectangleX, pixelY + rectangleY, pixelDimension, pixelDimension));
-                            currentTilePixelDepths.Add(tilePatterns[thisTile][m]);
+                            currentTilePixelDepths.Add(tilePatterns[thisTile][m] + (levelDepths[currentLevel][n]));
                         }
-                        if ((m) % (tilePatterns[0][0]) == 0)
+                        if ((m) % (tilePatterns[thisTile][0]) == 0)
                         {
                             //If we get to the end of a row, add one to levelY to move us down a row, and reset levelX to 1 (the begining of the row)
                             tilePixelY++;

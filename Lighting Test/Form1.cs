@@ -26,21 +26,18 @@ namespace Lighting_Test
         //Lists to store the current loaded tiles, and current tiles Colour Pallette:
         List<Rectangle> currentTiles = new List<Rectangle>();
         List<Rectangle> currentTilePixels = new List<Rectangle>();
-        List<int> currentTilePixelDepths = new List<int>();
+        List<int> currentPixelDepths = new List<int>();
+        List<int> currentTileDepths = new List<int>();
+
 
         //all lights on screen
         List<Light> lightList = new List<Light>();
-        double[][] rgb = new double[][]
-        {
-        new double[3] {0,0,0},
-        new double[3] {0,0,0},
-        new double[3] {0,0,0},
-        };
 
         double[] trueRgb = new double[3];
 
         int tileWidth = 45;
-        Light closestLight = new Light(new Rectangle(5800, 3200, 0, 0), new int[] { 0, 0, 0 }, 0, 0, 0, 0, 0);
+        SolidBrush changingBrush;
+
         //storing current Level
         int currentLevel;
 
@@ -50,25 +47,30 @@ namespace Lighting_Test
         bool[] WSAD = new bool[] { false, false, false, false };
         Keys[] keysToCheck = new Keys[] { Keys.W, Keys.S, Keys.A, Keys.D };
 
-        //Player info
+        //Player info:
+        //Player physical bodies
         Rectangle player;
         Rectangle playerXCheck;
         Rectangle playerYCheck;
+
+        //Player movement:
         int[] xYDirection = new int[] { 0, 0 };
         int[] xYSpeed = new int[] { 6, 6 };
 
-        Point playerSpawn = new Point(580, 326);
-        int playerSpawnLevel = 0;
         int[] canMoveUpDownLeftRight = new int[4] { 0, 0, 0, 0 };
 
         int[][] determineDirectionsList = new int[][]
-          {
+         {
       new int[]{  0,1,1}, //Up, Down, Affect Vertical Direction
       new int[]{  2,3,0}, //Left, Right, Affect Horizontal Direction
-          };
+         };
 
 
+        //Spawn points
+        Point playerSpawn = new Point(580, 326);
+        int playerSpawnLevel = 0;
 
+        //Temperary brushes, I would like to have 0 brushes up here by the time the project is over.
         SolidBrush redBrush = new SolidBrush(Color.Red);
         SolidBrush blueBrush = new SolidBrush(Color.DodgerBlue);
         SolidBrush whiteBrush = new SolidBrush(Color.White);
@@ -441,13 +443,13 @@ new int[]
         {
             InitializeComponent();
             player = new Rectangle(580, 320, 0, 0);
-            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100));
+            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100, 0));
             playerXCheck = new Rectangle(0, 0, 0, 0);
             playerYCheck = new Rectangle(0, 0, 0, 0);
 
-            //lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100));
-            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 100));
-            lightList.Add(new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 100));
+            //     lightList.Add(new Light(new Rectangle(980, 820, 0, 0), new int[] { -60, 0, -180 }, 100, 220, 40, 10, 100, 0));
+            //     lightList.Add(new Light(new Rectangle(380, 120, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 100, 0));
+            lightList.Add(new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 100, 0));
 
             createLevel(levelTiles[0], tileWidth);
             currentLevel = 0;
@@ -617,30 +619,34 @@ new int[]
             {
                 int x = 8;
             }
+            //For each rectangle on screen
             for (int n = 0; n < currentTilePixels.Count; n++)
             {
-                trueRgb = new double[3] {0,0,0};
+                //Reset the trueRgb array
+                trueRgb = new double[3] { 0, 0, 0 };
 
+                //For each light that can affect the rectangle (lights on screen)
                 for (int i = 0; i < lightList.Count; i++)
                 {
+                    //For each Red, Green, Or blue value of the rectangle's color
                     for (int num = 0; num < 3; num++)
                     {
-                        if (currentTilePixelDepths[n] > 0)
-                        {
-                            rgb[i][num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / currentTilePixelDepths[n]) + lightList[i].rgbAffectors[num];
-                        }
-
-                        if (rgb[i][num] > lightList[i].lightenPoint) { rgb[i][num] += 20; }
-                        if (rgb[i][num] > lightList[i].maxBright) { rgb[i][num] = lightList[i].maxBright; }
-                        if (rgb[i][num] < lightList[i].darkenPoint) { rgb[i][num] -= 12; }
-                        if (rgb[i][num] < lightList[i].blackPoint) { rgb[i][num] = 0; }
+                        //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
+                            if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
+                            {
+                                lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
+                            }
+                            if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
+                            if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
+                            if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
+                            if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
                     }
                     //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
                     for (int j = 0; j < 3; j++)
                     {
-                        if (rgb[i][j] > trueRgb[j])
+                        if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
                         {
-                            trueRgb[j] = rgb[i][j];
+                            trueRgb[j] = lightList[i].rgbStorage[j];
                         }
                     }
                 }
@@ -661,7 +667,8 @@ new int[]
             this.CenterToScreen();
             //Reset the current loaded level
             currentTiles.Clear();
-            currentTilePixelDepths.Clear();
+            currentPixelDepths.Clear();
+            currentTileDepths.Clear();
             currentTilePixels.Clear();
 
             //levelY keeps track of the 'Y' axis of the tile we are placing in the level
@@ -702,7 +709,8 @@ new int[]
                         if (m > 0)
                         {
                             currentTilePixels.Add(new Rectangle(pixelX + rectangleX, pixelY + rectangleY, pixelDimension, pixelDimension));
-                            currentTilePixelDepths.Add(tilePatterns[thisTile][m] + (levelDepths[currentLevel][n]));
+                            currentPixelDepths.Add(tilePatterns[thisTile][m] + (levelDepths[currentLevel][n]));
+                            currentTileDepths.Add(levelDepths[currentLevel][n]);
                         }
                         if ((m) % (tilePatterns[thisTile][0]) == 0)
                         {

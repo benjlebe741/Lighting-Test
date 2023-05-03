@@ -16,6 +16,9 @@ namespace Lighting_Test
         //The color of the light
         public int[] rgbAffectors = new int[3];
 
+        //The depth of the light
+        public int depth;
+
         //Numbers affecting the circles around the light:
             //When does the rgb value get lighter than what it normally would be?
         public int lightenPoint;
@@ -29,13 +32,16 @@ namespace Lighting_Test
         //Flicker speed
         public int flickerSpeed;
 
+        public double[] rgbStorage = new double[3] { 0, 0, 0 };
 
         //CREATING PHYSICAL LIGHTS:
-        public Light(Rectangle _body, int[] _rgbAffectors, int _lightenPoint, int _maxBright, int _darkenPoint, int _blackPoint, int _flickerSpeed) 
+        public Light(Rectangle _body, int[] _rgbAffectors, int _lightenPoint, int _maxBright, int _darkenPoint, int _blackPoint, int _flickerSpeed, int _depth) 
         {
             body = _body;
             
             rgbAffectors = _rgbAffectors;
+
+            depth = _depth;
 
             lightenPoint = _lightenPoint;
             maxBright = _maxBright;

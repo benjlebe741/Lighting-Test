@@ -30,9 +30,16 @@ namespace Lighting_Test
 
         //all lights on screen
         List<Light> lightList = new List<Light>();
+        double[][] rgb = new double[][]
+        {
+        new double[3] {0,0,0},
+        new double[3] {0,0,0},
+        new double[3] {0,0,0},
+        };
+
+        double[] trueRgb = new double[3];
 
         int tileWidth = 45;
-        double[] rgb = { 0, 0, 0 };
         Light closestLight = new Light(new Rectangle(5800, 3200, 0, 0), new int[] { 0, 0, 0 }, 0, 0, 0, 0, 0);
         //storing current Level
         int currentLevel;
@@ -434,13 +441,13 @@ new int[]
         {
             InitializeComponent();
             player = new Rectangle(580, 320, 0, 0);
-            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 100));
+            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100));
             playerXCheck = new Rectangle(0, 0, 0, 0);
             playerYCheck = new Rectangle(0, 0, 0, 0);
 
             //lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100));
-            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100));
-            lightList.Add(new Light(new Rectangle(880, 220, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 100));
+            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 100));
+            lightList.Add(new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 100));
 
             createLevel(levelTiles[0], tileWidth);
             currentLevel = 0;
@@ -612,30 +619,32 @@ new int[]
             }
             for (int n = 0; n < currentTilePixels.Count; n++)
             {
-                for (int num = 0; num < 3; num++)
+                trueRgb = new double[3] {0,0,0};
+
+                for (int i = 0; i < lightList.Count; i++)
                 {
-                    if (currentTilePixelDepths[n] > 0)
+                    for (int num = 0; num < 3; num++)
                     {
-                        //DETERMINE THE ACTIVE LIGHT SOURCE FOR THE PIXEL
-                        foreach (Light light in lightList)
+                        if (currentTilePixelDepths[n] > 0)
                         {
-                            if (GetLength(light.body, currentTilePixels[n]) < GetLength(closestLight.body, currentTilePixels[n]))
-                            { 
-                                closestLight = light;
-                            }
+                            rgb[i][num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / currentTilePixelDepths[n]) + lightList[i].rgbAffectors[num];
                         }
-                     
 
-                        rgb[num] = (20000 / GetLength(closestLight.body, currentTilePixels[n]) / currentTilePixelDepths[n]) + closestLight.rgbAffectors[num];
+                        if (rgb[i][num] > lightList[i].lightenPoint) { rgb[i][num] += 20; }
+                        if (rgb[i][num] > lightList[i].maxBright) { rgb[i][num] = lightList[i].maxBright; }
+                        if (rgb[i][num] < lightList[i].darkenPoint) { rgb[i][num] -= 12; }
+                        if (rgb[i][num] < lightList[i].blackPoint) { rgb[i][num] = 0; }
                     }
-
-                    if (rgb[num] > closestLight.lightenPoint) { rgb[num] += 20; }
-                    if (rgb[num] > closestLight.maxBright) { rgb[num] = closestLight.maxBright; }
-                    if (rgb[num] < closestLight.darkenPoint) { rgb[num] -= 12; }
-                    if (rgb[num] < closestLight.blackPoint) { rgb[num] = 0; }
+                    //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
+                    for (int j = 0; j < 3; j++)
+                    {
+                        if (rgb[i][j] > trueRgb[j])
+                        {
+                            trueRgb[j] = rgb[i][j];
+                        }
+                    }
                 }
-
-                try { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(Convert.ToInt32(rgb[0]), Convert.ToInt32(rgb[1]), Convert.ToInt32(rgb[2]))), currentTilePixels[n]); }
+                try { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2]))), currentTilePixels[n]); }
                 catch { }
             }
             e.Graphics.FillRectangle(whiteBrush, playerXCheck);

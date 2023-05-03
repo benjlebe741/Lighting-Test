@@ -632,14 +632,14 @@ new int[]
                     for (int num = 0; num < 3; num++)
                     {
                         //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
-                            if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
-                            {
-                                lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
-                            }
-                            if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
-                            if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
-                            if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
-                            if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
+                        if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
+                        {
+                            lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
+                        }
+                        if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
+                        if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
+                        if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
+                        if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
                     }
                     //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
                     for (int j = 0; j < 3; j++)

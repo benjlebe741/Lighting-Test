@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+
 
 namespace Lighting_Test
 {
@@ -22,13 +24,16 @@ namespace Lighting_Test
         int left = 2;
         int right = 3;
 
+        Action<bool> levelRenderer;
 
         //Lists to store the current loaded tiles, and current tiles Colour Pallette:
         List<Rectangle> currentTiles = new List<Rectangle>();
         List<Rectangle> currentTilePixels = new List<Rectangle>();
         List<int> currentPixelDepths = new List<int>();
         List<int> currentTileDepths = new List<int>();
+        List<Color> currentPixelColors = new List<Color>();
 
+        Color sampleColor;
 
         //all lights on screen
         List<Light> lightList = new List<Light>();
@@ -36,12 +41,12 @@ namespace Lighting_Test
         double[] trueRgb = new double[3];
 
         int tileWidth = 45;
-        SolidBrush changingBrush;
+
+        Graphics e;
+
 
         //storing current Level
-        int currentLevel;
-
-
+        int currentLevel = 0;
 
         //Key info
         bool[] WSAD = new bool[] { false, false, false, false };
@@ -294,24 +299,43 @@ new int[]
     new int[]
                 {
                 30,
-                4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
-                4,4,1,1,7,1,1,1,1,1,1,1,1,1,4,7,1,7,1,1,1,1,4,4,4,4,4,4,4,4,
-                4,4,1,1,7,1,1,7,7,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,
-                4,4,7,7,7,1,1,7,7,7,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,
-                4,4,1,1,7,1,7,1,1,1,7,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,
-                4,4,1,1,7,1,7,1,1,1,7,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,1,4,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,4,4,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
-                4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
-                4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
-                4,1,1,1,7,1,7,1,1,1,7,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                4,1,1,1,7,1,7,1,1,1,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
-                4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
-                4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
-                4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+
+                //4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
+                //4,4,1,1,7,1,1,1,1,1,1,1,1,1,4,7,1,7,1,1,1,1,4,4,4,4,4,4,4,4,
+                //4,4,1,1,7,1,1,7,7,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,
+                //4,4,7,7,7,1,1,7,7,7,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,
+                //4,4,1,1,7,1,7,1,1,1,7,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,
+                //4,4,1,1,7,1,7,1,1,1,7,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,1,4,4,4,
+                //4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
+                //4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,4,4,4,4,
+                //4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
+                //4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
+                //4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
+                //4,1,1,1,7,1,7,1,1,1,7,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                //4,1,1,1,7,1,7,1,1,1,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                //4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
+                //4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
+                //4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
+                //4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
+                //4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
             },
      new int[]
                 {
@@ -443,16 +467,16 @@ new int[]
         {
             InitializeComponent();
             player = new Rectangle(580, 320, 0, 0);
-            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100, 0));
+            //lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100, 0));
+            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 10, 10, 10, 10, 100, 0));
             playerXCheck = new Rectangle(0, 0, 0, 0);
             playerYCheck = new Rectangle(0, 0, 0, 0);
 
-            //     lightList.Add(new Light(new Rectangle(980, 820, 0, 0), new int[] { -60, 0, -180 }, 100, 220, 40, 10, 100, 0));
-            //     lightList.Add(new Light(new Rectangle(380, 120, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 100, 0));
+            lightList.Add(new Light(new Rectangle(980, 820, 0, 0), new int[] { -60, 0, -180 }, 100, 220, 40, 10, 100, 0));
+            lightList.Add(new Light(new Rectangle(380, 120, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 100, 0));
             lightList.Add(new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 100, 0));
 
             createLevel(levelTiles[0], tileWidth);
-            currentLevel = 0;
         }
         #endregion
 
@@ -583,7 +607,8 @@ new int[]
 
             //My info
             //label1.Text = $"{WSAD[0]} {WSAD[1]} {WSAD[2]} {WSAD[3]}\n{xYDirection[0]} {xYDirection[1]}\n{canMoveUpDownLeftRight[up]} {canMoveUpDownLeftRight[down]} {canMoveUpDownLeftRight[left]} {canMoveUpDownLeftRight[right]} ";
-            Refresh();
+            //Refresh();
+            levelRenderer(false);
         }
         #endregion
 
@@ -609,53 +634,6 @@ new int[]
                     WSAD[i] = trueOrFalse;
                 }
             }
-        }
-        #endregion
-
-        #region Paint
-        private void Form1_Paint(object sender, PaintEventArgs e)
-        {
-            if (currentLevel == 0)
-            {
-                int x = 8;
-            }
-            //For each rectangle on screen
-            for (int n = 0; n < currentTilePixels.Count; n++)
-            {
-                //Reset the trueRgb array
-                trueRgb = new double[3] { 0, 0, 0 };
-
-                //For each light that can affect the rectangle (lights on screen)
-                for (int i = 0; i < lightList.Count; i++)
-                {
-                    //For each Red, Green, Or blue value of the rectangle's color
-                    for (int num = 0; num < 3; num++)
-                    {
-                        //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
-                        if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
-                        {
-                            lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
-                        }
-                        if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
-                        if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
-                        if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
-                        if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
-                    }
-                    //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
-                    for (int j = 0; j < 3; j++)
-                    {
-                        if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
-                        {
-                            trueRgb[j] = lightList[i].rgbStorage[j];
-                        }
-                    }
-                }
-                try { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2]))), currentTilePixels[n]); }
-                catch { }
-            }
-            e.Graphics.FillRectangle(whiteBrush, playerXCheck);
-            e.Graphics.FillRectangle(whiteBrush, playerYCheck);
-            e.Graphics.FillRectangle(redBrush, player);
         }
         #endregion
 
@@ -689,7 +667,7 @@ new int[]
                 currentTiles.Add(new Rectangle(rectangleX, rectangleY, rectangleDimension, rectangleDimension));
 
                 //Now we have a boundary for where the player can go, we still need to place in the image
-                if (n > 0)
+                if (n > 0 && n <= 540)
                 {
                     int thisTile = level[n];
                     int tilePixelY = 0;
@@ -728,9 +706,33 @@ new int[]
             }
             int playerSize = Convert.ToInt32(rectangleDimension * 0.7);
             player.Size = new Size(playerSize, playerSize);
+
+            lightList[0].body.Location = new Point(player.X - playerSize / 2, player.Y - playerSize / 2);
             playerXCheck = new Rectangle(0, 0, playerSize + 2, playerSize); ;
             playerYCheck = new Rectangle(0, 0, playerSize, playerSize + 2);
+            //Define Graphics
+            e = this.CreateGraphics();
 
+            //If we are in a large level
+            if (currentTilePixels.Count > 70000)
+            {
+                //set the character light to something small
+                lightList[0] = (new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 500, 255, 40, 250, 100, 0));
+                //set the current paint method to a large room renderer
+                levelRenderer = largePaint;
+
+            }
+            //otherwise
+            else
+            {
+                //set the character light to something fancier
+                lightList[0] = (new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 170, 200, 130, 80, 100, 0));
+                //lightList[0] = (new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100, 0));
+                //set the current paint method to a large room renderer
+                levelRenderer = smallPaint;
+            }
+
+            levelRenderer(true);
         }
         #endregion
 
@@ -747,5 +749,124 @@ new int[]
             return length;
         }
 
+        //This version of paint doesnt refresh the screen each time! instead of drawing 5000 pixels it only draws the ones that change! This took my 'Process Memory' panel output from 56 to 32!
+
+        #region Large Paint
+        void largePaint(bool loadWholeLevel)
+        {
+            if (currentPixelColors.Count != currentTilePixels.Count)
+            {
+                currentPixelColors.Clear();
+
+                for (int n = 0; n < currentTilePixels.Count; n++)
+                {
+                    currentPixelColors.Add(Color.White);
+                }
+            }
+            //For each rectangle on screen
+            for (int n = 0; n < currentTilePixels.Count; n++)
+            {
+                if (GetLength(currentTilePixels[n], player) < 100 || loadWholeLevel == true)
+                {
+                    //Reset the trueRgb array
+                    trueRgb = new double[3] { 0, 0, 0 };
+
+                    //For each light that can affect the rectangle (lights on screen)
+                    for (int i = Convert.ToInt32(loadWholeLevel); i < lightList.Count; i++)
+                    {
+                        //For each Red, Green, Or blue value of the rectangle's color
+                        for (int num = 0; num < 3; num++)
+                        {
+                            //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
+                            if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
+                            {
+                                lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
+                            }
+                            if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
+                            if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
+                            if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
+                            if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
+                        }
+                        //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
+                        for (int j = 0; j < 3; j++)
+                        {
+                            if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
+                            {
+                                trueRgb[j] = lightList[i].rgbStorage[j];
+                            }
+                        }
+                    }
+                    sampleColor = (Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2])));
+
+                    //To avoid drawing things over again (This is reducing lag!)
+                    if (currentPixelColors[n] != sampleColor || loadWholeLevel == true)
+                    {
+                        currentPixelColors[n] = sampleColor;
+                        try { e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]); }
+                        catch { }
+                    }
+                }
+            }
+            //e.FillRectangle(whiteBrush, playerXCheck);
+            //e.FillRectangle(whiteBrush, playerYCheck);
+            //e.FillRectangle(redBrush, player);
+        }
+        #endregion
+
+        #region Small Paint
+        void smallPaint(bool loadWholeLevel)
+        {
+            if (currentPixelColors.Count != currentTilePixels.Count)
+            {
+                currentPixelColors.Clear();
+
+                for (int n = 0; n < currentTilePixels.Count; n++)
+                {
+                    currentPixelColors.Add(Color.White);
+                }
+            }
+            //For each rectangle on screen
+            for (int n = 0; n < currentTilePixels.Count; n++)
+            {
+                //Reset the trueRgb array
+                trueRgb = new double[3] { 0, 0, 0 };
+
+                //For each light that can affect the rectangle (lights on screen)
+                for (int i = Convert.ToInt32(loadWholeLevel); i < lightList.Count; i++)
+                {
+                    //For each Red, Green, Or blue value of the rectangle's color
+                    for (int num = 0; num < 3; num++)
+                    {
+                        //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
+                        if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
+                        {
+                            lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
+                        }
+                        if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
+                        if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
+                        if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
+                        if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
+                    }
+                    //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
+                    for (int j = 0; j < 3; j++)
+                    {
+                        if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
+                        {
+                            trueRgb[j] = lightList[i].rgbStorage[j];
+                        }
+                    }
+                }
+                sampleColor = (Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2])));
+
+                //To avoid drawing things over again (This is reducing lag!)
+                if (currentPixelColors[n] != sampleColor)
+                {
+                    currentPixelColors[n] = sampleColor;
+                    try { e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]); }
+                    catch { }
+                }
+            }
+        }
+        #endregion
     }
 }

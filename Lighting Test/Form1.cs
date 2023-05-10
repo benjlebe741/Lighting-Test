@@ -5,6 +5,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,7 +25,11 @@ namespace Lighting_Test
         int left = 2;
         int right = 3;
 
+        //Current Level Renderer
         Action<bool> levelRenderer;
+
+        //Random generator
+        Random random = new Random();
 
         //Lists to store the current loaded tiles, and current tiles Colour Pallette:
         List<Rectangle> currentTiles = new List<Rectangle>();
@@ -33,6 +38,28 @@ namespace Lighting_Test
         List<int> currentTileDepths = new List<int>();
         List<Color> currentPixelColors = new List<Color>();
 
+
+        //MOVING SPRITE GENERATION AND INFORMATOIN
+        //A list to store currently moving sprites
+        List<MovingSprite> movingSprites = new List<MovingSprite>();
+        //A list to store places plants can spawn in
+        List<Rectangle> soil = new List<Rectangle>();
+        int maxSprites = 1;
+
+        int largestSize = 50;
+        int largestSubtraction = 1;
+        int redAddition = 10;
+        int greenAddition = 50;
+        int blueAddition = 20;
+        int bioluminescenceSize = 5;
+
+        int sampleSuppressor = 4;
+
+        int chanceOfSpawn = 45;
+        int chanceOfRemoval = 90;
+
+
+        int sampleSpriteSize;
         Color sampleColor;
 
         //all lights on screen
@@ -50,7 +77,7 @@ namespace Lighting_Test
 
         //Key info
         bool[] WSAD = new bool[] { false, false, false, false };
-        Keys[] keysToCheck = new Keys[] { Keys.W, Keys.S, Keys.A, Keys.D };
+        Keys[] keysToCheck = new Keys[] { Keys.Space, Keys.S, Keys.A, Keys.D };
 
         //Player info:
         //Player physical bodies
@@ -60,15 +87,20 @@ namespace Lighting_Test
 
         //Player movement:
         int[] xYDirection = new int[] { 0, 0 };
-        int[] xYSpeed = new int[] { 6, 6 };
+        int[] xYSpeed = new int[] { 6, 11 };
+        int maxSpeedX = 11;
+        int maxSpeedY = 35;
+
+        string jumpState = "accelerating";
+
+        int speedInteger = 8;
+        int momentumGain = 3;
+        int momentumLoss = 2;
+
+        int previousJump = 0;
+        int jumpInterval = 700;
 
         int[] canMoveUpDownLeftRight = new int[4] { 0, 0, 0, 0 };
-
-        int[][] determineDirectionsList = new int[][]
-         {
-      new int[]{  0,1,1}, //Up, Down, Affect Vertical Direction
-      new int[]{  2,3,0}, //Left, Right, Affect Horizontal Direction
-         };
 
 
         //Spawn points
@@ -82,6 +114,8 @@ namespace Lighting_Test
 
         //How large is a row of levels? (how many levels are in a row of levels?) 
         int levelLayoutWidth = 3;
+
+        Stopwatch stopwatch = new Stopwatch();
         #endregion
 
         #region LEVEL DEPTHS:
@@ -159,22 +193,22 @@ namespace Lighting_Test
                 {
                 30,
                 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
-                0,0,1,1,7,1,1,1,1,1,1,1,1,1,0,7,1,7,1,1,1,1,0,0,0,0,0,0,0,0,
-                0,0,1,1,7,1,1,7,7,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,
-                0,0,7,7,7,1,1,7,7,7,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
-                0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
-                0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
-                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
-                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,
-                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                0,0,1,1,7,1,8,6,5,5,1,1,1,1,0,1,2,3,4,5,6,7,0,0,0,0,0,0,0,0,
+                0,0,1,3,7,9,9,7,7,7,1,1,1,1,1,3,4,4,6,7,8,8,1,1,1,0,0,0,0,0,
+                0,0,7,7,7,9,9,7,7,7,5,5,1,1,0,3,4,5,6,7,8,9,1,1,1,1,1,0,0,0,
+                0,0,1,3,7,9,7,4,5,5,7,5,1,1,0,2,2,4,5,4,7,1,1,1,1,1,1,0,0,0,
+                0,0,1,3,7,9,7,4,1,1,7,1,1,1,0,0,0,0,5,5,6,1,1,1,1,1,1,0,0,0,
+                0,0,1,3,3,3,3,4,1,1,1,1,1,1,0,1,2,3,2,4,5,1,1,1,1,1,0,0,0,0,
+                0,0,1,2,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,4,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,1,0,0,0,0,0,0,0,0,
                 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
-                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
-                0,1,1,1,7,1,7,1,1,1,7,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                0,1,1,1,7,1,7,1,1,1,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
-                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
-                0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
-                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                0,1,1,2,3,3,7,1,1,1,7,1,1,1,0,1,1,1,1,1,1,1,1,2,1,1,1,1,1,1,
+                0,1,2,3,4,4,7,1,1,1,7,1,1,1,1,1,1,1,1,1,1,1,4,3,2,1,1,1,1,1,
+                0,0,3,4,5,6,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,5,4,3,1,0,0,0,0,
+                0,0,2,3,4,5,1,1,1,1,1,1,1,1,0,1,1,1,1,1,4,5,4,3,2,1,0,0,0,0,
+                0,0,1,2,3,4,1,1,1,1,1,1,1,1,0,1,1,1,1,1,3,4,3,2,1,1,1,1,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,0,0,0,0,0,0,0,0,
                 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             },
      new int[]
@@ -242,7 +276,7 @@ new int[]
                 4,6,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,4,
                 4,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,7,1,1,1,4,4,4,4,4,4,4,
                 4,4,4,4,4,4,4,4,4,3,3,3,3,4,4,4,4,4,4,7,1,1,4,4,4,4,4,4,4,4,
-                4,4,9,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                4,4,9,10,10,10,10,10,10,10,10,10,10,10,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                 4,6,3,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                 4,4,3,2,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,1,1,4,4,4,
                 4,6,3,3,3,2,3,3,3,3,6,6,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
@@ -429,7 +463,7 @@ new int[]
             2,3,2,
             3,2,0,
         },
-              new int[]{
+              new int[]{ //7
             15,
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
             1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
@@ -447,17 +481,23 @@ new int[]
             1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         },
-            new int[]{
+            new int[]{ //8
             3,
             3,2,4,
             2,3,2,
             1,1,0,
         },
-               new int[]{
+               new int[]{ // 9
             3,
             0,1,8,
             1,5,6,
             10,13,12,
+        },
+                    new int[]{ // 10
+            3,
+            1,1,1,
+            7,8,7,
+            10,8,12,
         },
         };
         #endregion
@@ -467,57 +507,223 @@ new int[]
         {
             InitializeComponent();
             player = new Rectangle(580, 320, 0, 0);
-            //lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100, 0));
-            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 10, 10, 10, 10, 100, 0));
+            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 0));
+            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 10, 10, 10, 10, 0));
             playerXCheck = new Rectangle(0, 0, 0, 0);
             playerYCheck = new Rectangle(0, 0, 0, 0);
 
-            lightList.Add(new Light(new Rectangle(980, 820, 0, 0), new int[] { -60, 0, -180 }, 100, 220, 40, 10, 100, 0));
-            lightList.Add(new Light(new Rectangle(380, 120, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 100, 0));
-            lightList.Add(new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 100, 0));
+            lightList.Add(new Light(new Rectangle(980, 820, 0, 0), new int[] { -60, 0, -180 }, 100, 220, 40, 10, 0));
+            lightList.Add(new Light(new Rectangle(380, 120, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 0));
+            lightList.Add(new Light(new Rectangle(680, 120, 0, 0), new int[] { 6, -126, -39 }, 80, 240, 50, 30, 0));
+            lightList.Add(new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 0));
 
-            createLevel(levelTiles[0], tileWidth);
+            createLevel(levelTiles[currentLevel], tileWidth);
+
+            stopwatch.Start();
         }
         #endregion
 
         #region Game Timer
         private void gameTimer_Tick(object sender, EventArgs e)
         {
-            #region Determing All Object Directions
-            //Determening all player directions depending on what keys are pressed: (for example: if 'Up' is down, and 'Down' is not, player2's vertical direction is -1, reverse those to get 1, and if both/neither are down, get a direction of 0.)
-            for (int i = 0; i < determineDirectionsList.Length; i++)
+            #region Adding Atmospheric Moving Sprites
+            //Add rain or snow or nice effects!
+            if (random.Next(0, 101) > chanceOfSpawn && movingSprites.Count < maxSprites)
             {
-                if (WSAD[determineDirectionsList[i][0]] == true && WSAD[determineDirectionsList[i][1]] == false)
+                sampleSpriteSize = random.Next(0, largestSize) / random.Next(1, largestSubtraction);
+                int smallerSize = sampleSpriteSize / random.Next(2, 8);
+                int red = random.Next(0, redAddition);
+                int green = random.Next(0, greenAddition);
+                int blue = random.Next(0, blueAddition);
+                int yLoc = 0;
+
+                movingSprites.Add(new MovingSprite(new Rectangle(random.Next(0, this.Width - sampleSpriteSize), yLoc, sampleSpriteSize, sampleSpriteSize), new int[] { 0, random.Next(1, 18) }, new int[] { 0, 1 }, Color.FromArgb(red, green, blue), random.Next(-3, 13)));
+                movingSprites.Add(new MovingSprite(new Rectangle(random.Next(0, this.Width - smallerSize), yLoc - smallerSize, smallerSize, smallerSize), new int[] { 0, random.Next(1, 18) }, new int[] { 0, 1 }, Color.FromArgb(red / 2, green / 2, blue / 2), random.Next(-3, 13)));
+            }
+
+            if (random.Next(0, 101) > chanceOfRemoval && movingSprites.Count > 0)
+            {
+                if (movingSprites[0].body.Width > 16 && movingSprites.Count < maxSprites)
                 {
-                    xYDirection[determineDirectionsList[i][2]] = -1;
+                    movingSprites.Add(new MovingSprite(new Rectangle(movingSprites[0].body.X + movingSprites[0].body.Width / 2, movingSprites[0].body.Y, movingSprites[0].body.Width / 4, movingSprites[0].body.Width / 4), new int[] { 0, random.Next(1, 18) }, new int[] { 0, 1 }, movingSprites[0].color, random.Next(0, 3)));
                 }
-                else if (WSAD[determineDirectionsList[i][0]] == false && WSAD[determineDirectionsList[i][1]] == true)
-                {
-                    xYDirection[determineDirectionsList[i][2]] = 1;
-                }
-                else
-                {
-                    xYDirection[determineDirectionsList[i][2]] = 0;
-                }
+                movingSprites.RemoveAt(0);
             }
             #endregion
-            #region Move Player
-            if (xYDirection[x] != canMoveUpDownLeftRight[left] && xYDirection[x] != canMoveUpDownLeftRight[right])
+
+            //FOR SOME REASON PLAYER SPEED IS LACKING, LOOK INTO IT.
+            if (stopwatch.ElapsedMilliseconds % speedInteger == 0)
             {
-                player.X += xYDirection[x] * xYSpeed[x];
+                //Find out how fast the player should be moving Horizontally!
+                //gaining momentum based on walking time
+                if (xYSpeed[x] < maxSpeedX && xYDirection[x] != 0) { xYSpeed[x] += momentumGain; }
+                //losing momentum over time
+                else if (xYSpeed[x] > momentumLoss && xYDirection[x] == 0) { xYSpeed[x] -= momentumLoss; }
             }
-            if (xYDirection[y] != canMoveUpDownLeftRight[up] && xYDirection[y] != canMoveUpDownLeftRight[down])
+
+
+            if (WSAD[0] == true && canMoveUpDownLeftRight[down] == 1)
             {
-                player.Y += xYDirection[y] * xYSpeed[y];
+                newJump();
             }
+            //Resting: jump speed is at 0
+            else if (canMoveUpDownLeftRight[down] == 1)
+            {
+                xYSpeed[y] = 3;
+            }
+            //Lifting: decrease speed
+            if (jumpState == "decelerating")
+            {
+                xYDirection[y] = -1;
+                if (xYSpeed[y] > 2)
+                {
+                    xYSpeed[y] -= 2;
+                }
+
+                if (WSAD[0] == false || stopwatch.ElapsedMilliseconds - previousJump > jumpInterval / 2)
+                {
+                    xYSpeed[y] = 0;
+                    jumpState = "accelerating";
+                }
+            }
+            //Falling: increase speed
+            if (jumpState == "accelerating")
+            {
+                xYDirection[y] = 1;
+                if (xYSpeed[y] < maxSpeedY)
+                {
+                    xYSpeed[y] += 2;
+                }
+            }
+
+
+
+
+            #region Determing All Object Directions
+            //Determening player directions depending on what keys are pressed:
+            if (WSAD[left] == true && WSAD[right] == false)
+            {
+                xYDirection[x] = -1;
+            }
+            else if (WSAD[left] == false && WSAD[right] == true)
+            {
+                xYDirection[x] = 1;
+            }
+            else
+            {
+                xYDirection[x] = 0;
+            }
+            #endregion
+
+            #region Move Player TRY 1
+            //if (xYDirection[x] != canMoveUpDownLeftRight[left] && xYDirection[x] != canMoveUpDownLeftRight[right])
+            //{
+            //    player.X += xYDirection[x] * xYSpeed[x];
+            //}
+
+            //if (xYDirection[y] != canMoveUpDownLeftRight[up] && xYDirection[y] != canMoveUpDownLeftRight[down])
+            //{
+            //    player.Y += xYDirection[y] * xYSpeed[y];
+            //}
+
+            //canMoveUpDownLeftRight[up] = 0;
+            //canMoveUpDownLeftRight[down] = 0;
+            //canMoveUpDownLeftRight[left] = 0;
+            //canMoveUpDownLeftRight[right] = 0;
+
+
+            ////Keep track of the original players position before adjustments
+            //int newYlocation = player.Y;
+            //int newXlocation = player.X;
+
+            //for (int n = 0; n < currentTiles.Count; n++)
+            //{
+            //    //CAN PLAYER GO UP DOWN LEFT RIGHT
+            //    if (playerYCheck.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
+            //    {
+            //        //TOP WALL
+            //        if (playerYCheck.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && levelDepths[currentLevel][n + 30] != 0)
+            //        {
+            //            canMoveUpDownLeftRight[up] = -1;
+            //        }
+            //        //BOTTOM WALL
+            //        if (playerYCheck.Y <= currentTiles[n].Y && n - 30 >= 0 && levelDepths[currentLevel][n - 30] != 0)
+            //        {
+
+            //            canMoveUpDownLeftRight[down] = 1;
+
+            //        }
+            //    }
+            //    if (playerXCheck.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
+            //    {
+            //        //LEFT WALL
+            //        if (playerXCheck.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && levelDepths[currentLevel][n + 1] != 0)
+            //        {
+            //            canMoveUpDownLeftRight[left] = -1;
+            //        }
+            //        //RIGHT WALL
+            //        if (playerXCheck.X <= currentTiles[n].X && n - 1 >= 0 && levelDepths[currentLevel][n - 1] != 0)
+            //        {
+            //            canMoveUpDownLeftRight[right] = 1;
+            //        }
+            //    }
+
+            //    //PLAYER IN A TILE
+            //    if (player.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
+            //    {
+            //        //LEFT WALL
+            //        if (player.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && levelDepths[currentLevel][n + 1] != 0)
+            //        {
+            //            //player.X += 1;
+            //            newXlocation = currentTiles[n].X + tileWidth;
+            //        }
+            //        //RIGHT WALL
+            //        else if (player.X <= currentTiles[n].X && n - 1 >= 0 && levelDepths[currentLevel][n - 1] != 0)
+            //        {
+            //            //player.X += -1;
+            //            newXlocation = currentTiles[n].X - player.Width;
+            //        }
+            //        //TOP WALL
+            //        else if (player.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && levelDepths[currentLevel][n + 30] != 0)
+            //        {
+            //            //player.Y += 1;
+            //            newYlocation = currentTiles[n].Y + tileWidth;
+            //        }
+            //        //BOTTOM WALL
+            //        else if (player.Y <= currentTiles[n].Y && n - 30 >= 0 && levelTiles[currentLevel][n - 30] != 0)
+            //        {
+            //            //player.Y += -1;
+            //            newYlocation = currentTiles[n].Y - player.Width;
+            //        }
+
+            //        //Preform all adjustments AFTER checks have been made
+            //        player.Y = newYlocation;
+            //        player.X = newXlocation;
+            //    }
+            //}
+            #endregion
+            #region Move Player TRY 2
 
             canMoveUpDownLeftRight[up] = 0;
             canMoveUpDownLeftRight[down] = 0;
             canMoveUpDownLeftRight[left] = 0;
             canMoveUpDownLeftRight[right] = 0;
 
+            //Rectangle to check the players next move
+            Rectangle proposedMove = new Rectangle(player.X, player.Y, player.Width, player.Height);
+
+            //Move the rectangle to be in players position
+            int Xmove = xYDirection[x] * xYSpeed[x];
+            int Ymove = xYDirection[y] * xYSpeed[y];
+
+            proposedMove.X += Xmove;
+            proposedMove.Y += Ymove;
+
+            //For each tile, does the new move interstect with it?
             for (int n = 0; n < currentTiles.Count; n++)
             {
+                #region UpDownLeftRight
+                //CAN PLAYER GO UP DOWN LEFT RIGHT
                 if (playerYCheck.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
                 {
                     //TOP WALL
@@ -533,7 +739,6 @@ new int[]
 
                     }
                 }
-
                 if (playerXCheck.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
                 {
                     //LEFT WALL
@@ -547,38 +752,51 @@ new int[]
                         canMoveUpDownLeftRight[right] = 1;
                     }
                 }
+                #endregion
 
-                if (player.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
+                if (proposedMove.IntersectsWith(currentTiles[n]) && levelDepths[currentLevel][n] == 0)
                 {
-                    //TOP WALL
-                    if (player.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && levelDepths[currentLevel][n + 30] != 0)
-                    {
-                        player.Y += 1;
-                    }
-                    //BOTTOM WALL
-                    if (player.Y <= currentTiles[n].Y && n - 30 >= 0 && levelTiles[currentLevel][n - 30] != 0)
-                    {
-                        player.Y += -1;
-                    }
+                    int Xdistance = Math.Abs((currentTiles[n].X + (currentTiles[n].Width / 2)) - (player.X + (player.Width / 2)));
+                    int Ydistance = Math.Abs((currentTiles[n].Y + (currentTiles[n].Height / 2)) - (player.Y + (player.Height / 2)));
+
+                    //If the player would not be where they are supposed to be.. find how far they can go!
                     //LEFT WALL
-                    if (player.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && levelDepths[currentLevel][n + 1] != 0)
+                    if (player.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && levelDepths[currentLevel][n + 1] != 0 && Xdistance > Ydistance)
                     {
-                        player.X += 1;
+                        Xmove = (player.X - (currentTiles[n].Width + currentTiles[n].X)) * -1;
                     }
                     //RIGHT WALL
-                    if (player.X <= currentTiles[n].X && n - 1 >= 0 && levelDepths[currentLevel][n - 1] != 0)
+                    else if (player.X <= currentTiles[n].X && n - 1 >= 0 && levelDepths[currentLevel][n - 1] != 0 && Xdistance > Ydistance)
+
                     {
-                        player.X += -1;
+                        Xmove = currentTiles[n].X - player.X - player.Width;
+                    }
+                    //TOP WALL
+                    else if (player.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && levelDepths[currentLevel][n + 30] != 0 && Xdistance < Ydistance)
+                    {
+                        Ymove = (player.Y - (currentTiles[n].Y + currentTiles[n].Height)) * -1;
+                    }
+                    //BOTTOM WALL
+                    else if (player.Y <= currentTiles[n].Y && n - 30 >= 0 && levelTiles[currentLevel][n - 30] != 0 && Xdistance < Ydistance)
+                    {
+                        Ymove = currentTiles[n].Y - player.Y - player.Height;
                     }
                 }
             }
+            //Finally move the player.
+
+            player.X += Xmove;
+            player.Y += Ymove;
+
             #endregion
+
             #region Passing Through Levels
             if (player.Y <= player.Height / 2)
             {
                 player.Y = this.Height - player.Height;
                 currentLevel += levelLayoutWidth * -1;
                 createLevel(levelTiles[currentLevel], tileWidth);
+                newJump();
             }
             if (player.Y >= this.Height - player.Height / 2)
             {
@@ -606,9 +824,20 @@ new int[]
             lightList[0].body.Location = new Point(player.X + (player.Width / 2), player.Y + (player.Width / 2));
 
             //My info
-            //label1.Text = $"{WSAD[0]} {WSAD[1]} {WSAD[2]} {WSAD[3]}\n{xYDirection[0]} {xYDirection[1]}\n{canMoveUpDownLeftRight[up]} {canMoveUpDownLeftRight[down]} {canMoveUpDownLeftRight[left]} {canMoveUpDownLeftRight[right]} ";
-            //Refresh();
+            label1.Text = $"{WSAD[0]} {WSAD[1]} {WSAD[2]} {WSAD[3]}\n{xYDirection[0]} {xYDirection[1]}\n{canMoveUpDownLeftRight[up]} {canMoveUpDownLeftRight[down]} {canMoveUpDownLeftRight[left]} {canMoveUpDownLeftRight[right]} ";
             levelRenderer(false);
+
+            //Move Moving Sprites
+            for (int i = 0; i < movingSprites.Count; i++)
+            {
+                //move the sprite
+                movingSprites[i].body.Y += movingSprites[i].xySpeed[y];
+                //if the sprite is off the screen remove the sprite
+                if (movingSprites[i].body.Y > this.Height - movingSprites[i].body.Height)
+                {
+                    movingSprites.RemoveAt(i);
+                }
+            }
         }
         #endregion
 
@@ -648,6 +877,7 @@ new int[]
             currentPixelDepths.Clear();
             currentTileDepths.Clear();
             currentTilePixels.Clear();
+            movingSprites.Clear();
 
             //levelY keeps track of the 'Y' axis of the tile we are placing in the level
             int levelY = 0;
@@ -717,7 +947,7 @@ new int[]
             if (currentTilePixels.Count > 70000)
             {
                 //set the character light to something small
-                lightList[0] = (new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 500, 255, 40, 250, 100, 0));
+                lightList[0] = (new Light(new Rectangle(580, 320, 0, 0), new int[] { -400, -400, -400 }, 0, 0, 0, 0, 0));
                 //set the current paint method to a large room renderer
                 levelRenderer = largePaint;
 
@@ -726,8 +956,8 @@ new int[]
             else
             {
                 //set the character light to something fancier
-                lightList[0] = (new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 170, 200, 130, 80, 100, 0));
-                //lightList[0] = (new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 100, 0));
+                lightList[0] = (new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 170, 200, 130, 80, 0));
+                //lightList[0] = (new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 0));
                 //set the current paint method to a large room renderer
                 levelRenderer = smallPaint;
             }
@@ -754,6 +984,114 @@ new int[]
         #region Large Paint
         void largePaint(bool loadWholeLevel)
         {
+            //Setting up the pixel colors list
+            if (currentPixelColors.Count != currentTilePixels.Count)
+            {
+                //clear the list, and for every pixel that should be on the screen, add in a replacable color.
+                currentPixelColors.Clear();
+
+                for (int n = 0; n < currentTilePixels.Count; n++)
+                {
+                    currentPixelColors.Add(Color.White);
+                }
+            }
+
+            //For each rectangle on screen
+            for (int n = 0; n < currentTilePixels.Count; n++)
+            {
+                //Finds if there is a spot in the Moving Sprites list where the pixel overlaps with a sprite
+                int intersectsWith = checkList(currentTilePixels[n], movingSprites);
+                if (intersectsWith != -1)
+                {
+                    //Redraws the pixel if outside the radius of the moving sprite
+                    if (GetLength(movingSprites[intersectsWith].body, currentTilePixels[n]) > movingSprites[intersectsWith].body.Width / 1.9)
+                    {
+                        e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]);
+                    }
+                    //draws the pixel as part of the moving sprite
+                    else if (currentTileDepths[n] >= movingSprites[intersectsWith].depth)
+                    {
+                        try
+                        {
+                            if (movingSprites[intersectsWith].body.Width > bioluminescenceSize)
+                            {
+                                e.FillRectangle(new SolidBrush(Color.FromArgb(currentPixelColors[n].R + movingSprites[intersectsWith].color.R + sampleColor.R / sampleSuppressor, currentPixelColors[n].G + movingSprites[intersectsWith].color.G + sampleColor.G / sampleSuppressor, currentPixelColors[n].B + movingSprites[intersectsWith].color.B + sampleColor.B / sampleSuppressor)), currentTilePixels[n]);
+                            }
+                            else
+                            {
+                                sampleColor = Color.FromArgb(currentPixelColors[n].R + movingSprites[intersectsWith].color.R + sampleColor.R / 4, currentPixelColors[n].G + movingSprites[intersectsWith].color.G + sampleColor.G / 4, currentPixelColors[n].B + movingSprites[intersectsWith].color.B + sampleColor.B / 4);
+                                if (currentPixelColors[n] != sampleColor)
+                                {
+                                    currentPixelColors[n] = sampleColor;
+
+                                    e.FillRectangle(new SolidBrush(sampleColor), currentTilePixels[n]);
+                                }
+                            }
+                        }
+                        catch { movingSprites.RemoveAt(intersectsWith); }
+                    }
+                }
+                else if (GetLength(currentTilePixels[n], player) < 103 || loadWholeLevel == true)
+                {
+                    if (currentTilePixels[n].IntersectsWith(player))
+                    {
+                        sampleColor = Color.White;
+                        if (currentPixelColors[n] != sampleColor)
+                        {
+                            currentPixelColors[n] = sampleColor;
+
+                            e.FillRectangle(new SolidBrush(sampleColor), currentTilePixels[n]);
+                        }
+
+                    }
+                    else
+                    {
+                        //Reset the trueRgb array
+                        trueRgb = new double[3] { 0, 0, 0 };
+
+                        //For each light that can affect the rectangle (lights on screen)
+                        for (int i = Convert.ToInt32(loadWholeLevel); i < lightList.Count; i++)
+                        {
+                            //For each Red, Green, Or blue value of the rectangle's color
+                            for (int num = 0; num < 3; num++)
+                            {
+                                //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
+                                if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
+                                {
+                                    lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
+                                }
+                                if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
+                                if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
+                                if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
+                                if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
+                            }
+                            //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
+                            for (int j = 0; j < 3; j++)
+                            {
+                                if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
+                                {
+                                    trueRgb[j] = lightList[i].rgbStorage[j];
+                                }
+                            }
+                        }
+                        sampleColor = (Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2])));
+
+                        //To avoid drawing things over again (This is reducing lag!)
+                        if (currentPixelColors[n] != sampleColor)
+                        {
+                            currentPixelColors[n] = sampleColor;
+                            try { e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]); }
+                            catch { }
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region Small Paint
+        void smallPaint(bool loadWholeLevel)
+        {
             if (currentPixelColors.Count != currentTilePixels.Count)
             {
                 currentPixelColors.Clear();
@@ -766,7 +1104,16 @@ new int[]
             //For each rectangle on screen
             for (int n = 0; n < currentTilePixels.Count; n++)
             {
-                if (GetLength(currentTilePixels[n], player) < 100 || loadWholeLevel == true)
+                if (currentTilePixels[n].IntersectsWith(player))
+                {
+                    sampleColor = Color.White;
+                    if (currentPixelColors[n] != sampleColor)
+                    {
+                        currentPixelColors[n] = sampleColor;
+                        e.FillRectangle(new SolidBrush(sampleColor), currentTilePixels[n]);
+                    }
+                }
+                else
                 {
                     //Reset the trueRgb array
                     trueRgb = new double[3] { 0, 0, 0 };
@@ -799,7 +1146,7 @@ new int[]
                     sampleColor = (Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2])));
 
                     //To avoid drawing things over again (This is reducing lag!)
-                    if (currentPixelColors[n] != sampleColor || loadWholeLevel == true)
+                    if (currentPixelColors[n] != sampleColor)
                     {
                         currentPixelColors[n] = sampleColor;
                         try { e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]); }
@@ -807,66 +1154,27 @@ new int[]
                     }
                 }
             }
-            //e.FillRectangle(whiteBrush, playerXCheck);
-            //e.FillRectangle(whiteBrush, playerYCheck);
-            //e.FillRectangle(redBrush, player);
         }
         #endregion
 
-        #region Small Paint
-        void smallPaint(bool loadWholeLevel)
+        void newJump()
         {
-            if (currentPixelColors.Count != currentTilePixels.Count)
-            {
-                currentPixelColors.Clear();
-
-                for (int n = 0; n < currentTilePixels.Count; n++)
-                {
-                    currentPixelColors.Add(Color.White);
-                }
-            }
-            //For each rectangle on screen
-            for (int n = 0; n < currentTilePixels.Count; n++)
-            {
-                //Reset the trueRgb array
-                trueRgb = new double[3] { 0, 0, 0 };
-
-                //For each light that can affect the rectangle (lights on screen)
-                for (int i = Convert.ToInt32(loadWholeLevel); i < lightList.Count; i++)
-                {
-                    //For each Red, Green, Or blue value of the rectangle's color
-                    for (int num = 0; num < 3; num++)
-                    {
-                        //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
-                        if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
-                        {
-                            lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
-                        }
-                        if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
-                        if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
-                        if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
-                        if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
-                    }
-                    //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
-                    for (int j = 0; j < 3; j++)
-                    {
-                        if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
-                        {
-                            trueRgb[j] = lightList[i].rgbStorage[j];
-                        }
-                    }
-                }
-                sampleColor = (Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2])));
-
-                //To avoid drawing things over again (This is reducing lag!)
-                if (currentPixelColors[n] != sampleColor)
-                {
-                    currentPixelColors[n] = sampleColor;
-                    try { e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]); }
-                    catch { }
-                }
-            }
+            xYDirection[y] = -1;
+            xYSpeed[y] = maxSpeedY;
+            previousJump = Convert.ToInt32(stopwatch.ElapsedMilliseconds);
+            jumpState = "decelerating";
         }
-        #endregion
+
+        int checkList(Rectangle rectangle, List<MovingSprite> list)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (rectangle.IntersectsWith(list[i].body))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
     }
 }

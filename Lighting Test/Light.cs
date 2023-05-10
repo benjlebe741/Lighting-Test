@@ -29,13 +29,10 @@ namespace Lighting_Test
             //When does the rgb value skip completely to black?
         public int blackPoint;
 
-        //Flicker speed
-        public int flickerSpeed;
-
         public double[] rgbStorage = new double[3] { 0, 0, 0 };
 
         //CREATING PHYSICAL LIGHTS:
-        public Light(Rectangle _body, int[] _rgbAffectors, int _lightenPoint, int _maxBright, int _darkenPoint, int _blackPoint, int _flickerSpeed, int _depth) 
+        public Light(Rectangle _body, int[] _rgbAffectors, int _lightenPoint, int _maxBright, int _darkenPoint, int _blackPoint, int _depth) 
         {
             body = _body;
             
@@ -47,8 +44,6 @@ namespace Lighting_Test
             maxBright = _maxBright;
             darkenPoint = _darkenPoint;
             blackPoint = _blackPoint;
-            
-            flickerSpeed = _flickerSpeed;
         }
     }
 }

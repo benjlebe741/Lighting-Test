@@ -512,9 +512,9 @@ new int[]
             playerXCheck = new Rectangle(0, 0, 0, 0);
             playerYCheck = new Rectangle(0, 0, 0, 0);
 
-            lightList.Add(new Light(new Rectangle(980, 820, 0, 0), new int[] { -60, 0, -180 }, 100, 220, 40, 10, 0));
-            lightList.Add(new Light(new Rectangle(380, 120, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 0));
-            lightList.Add(new Light(new Rectangle(680, 120, 0, 0), new int[] { 6, -126, -39 }, 80, 240, 50, 30, 0));
+            //lightList.Add(new Light(new Rectangle(980, 820, 0, 0), new int[] { -60, 0, -180 }, 100, 220, 40, 10, 0));
+            //lightList.Add(new Light(new Rectangle(380, 120, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 0));
+            //lightList.Add(new Light(new Rectangle(680, 120, 0, 0), new int[] { 6, -126, -39 }, 80, 240, 50, 30, 0));
             lightList.Add(new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 0));
 
             createLevel(levelTiles[currentLevel], tileWidth);
@@ -785,8 +785,15 @@ new int[]
             }
             //Finally move the player.
 
-            player.X += Xmove;
-            player.Y += Ymove;
+            if (xYDirection[x] != canMoveUpDownLeftRight[left] && xYDirection[x] != canMoveUpDownLeftRight[right])
+            {
+                player.X += Xmove;
+            }
+
+            if (xYDirection[y] != canMoveUpDownLeftRight[up] && xYDirection[y] != canMoveUpDownLeftRight[down])
+            {
+                player.Y += Ymove;
+            }
 
             #endregion
 

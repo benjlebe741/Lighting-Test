@@ -11,12 +11,14 @@ namespace Lighting_Test
         public List<Light> lights = new List<Light>();
         public List<int> tileSprites = new List<int>();
         public List<int> depths = new List<int>();
+        public List<Entity> entities= new List<Entity>();
 
-        public Level(List<int> _tileSprites, List<int> _depths, List<Light> _lights) 
+        public Level(List<int> _tileSprites, List<int> _depths, List<Light> _lights, List<Entity> _entities) 
         {
             lights = _lights;
             tileSprites = _tileSprites;
             depths = _depths;
+            entities = _entities;
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Drawing.Printing;
 using System.Globalization;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -38,12 +39,15 @@ namespace Lighting_Test
         List<int> currentTileDepths = new List<int>();
         List<Color> currentPixelColors = new List<Color>();
 
+        List<Entity> currentEntities = new List<Entity>();
+
+        List<Rectangle> redrawList = new List<Rectangle>();
 
         //MOVING SPRITE GENERATION AND INFORMATOIN
         //A list to store currently moving sprites
         List<MovingSprite> movingSprites = new List<MovingSprite>();
-        //A list to store places plants can spawn in
-        List<Rectangle> soil = new List<Rectangle>();
+        ////A list to store places plants can spawn in
+        //List<Rectangle> soil = new List<Rectangle>();
         int maxSprites = 1;
 
         int largestSize = 50;
@@ -83,6 +87,7 @@ namespace Lighting_Test
         //Player info:
         //Player physical bodies
         Rectangle player;
+        Rectangle oldPlayer;
         Rectangle playerXCheck;
         Rectangle playerYCheck;
 
@@ -140,8 +145,8 @@ namespace Lighting_Test
                 4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,1,1,1,1,1,1,1,4,4,4,4,
                 4,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
                 4,6,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,4,
-                4,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,7,1,1,1,4,4,4,4,4,4,4,
-                4,4,4,4,4,4,4,4,4,3,3,3,3,4,4,4,4,4,4,7,1,1,4,4,4,4,4,4,4,4,
+                4,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3,1,1,1,4,4,4,4,4,4,4,
+                4,4,4,4,4,4,4,4,4,3,3,3,3,4,4,4,4,4,4,3,1,1,4,4,4,4,4,4,4,4,
                 4,4,9,10,10,10,10,10,10,10,10,10,10,10,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                 4,6,3,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                 4,4,3,2,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,1,1,4,4,4,
@@ -175,6 +180,13 @@ namespace Lighting_Test
                 new List<Light>
                 {
                     new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 170, 200, 130, 80, 0),
+                },
+                 new List<Entity>
+                {
+                     new Entity
+                     (
+                         new MovingSprite(new Rectangle(30, 560, 20, 20), new int[]{4,1}, new int[]{1,0},Color.Red, 0)
+                     ),
                 }
                 ),
             #endregion
@@ -219,17 +231,25 @@ namespace Lighting_Test
                 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
                 1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                0,0,1,13,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
-                0,0,7,13,13,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,0,
+                0,0,7,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1,0,0,
                 0,0,7,7,7,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
                 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
                 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
                 },
                 new List<Light>
                 {
-                       new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 170, 200, 130, 80, 0),
-                //new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 0),
-                new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 0),
+                       new Light(new Rectangle(580, 320, 0, 0), new int[] { -60, 0, -180 }, 170, 200, 130, 80, 0),
+                      new Light(new Rectangle(580, 320, 0, 0), new int[] { -180, -60, 0 }, 170, 230, 130, 180, 0),
+                       //new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 0),
+                new Light(new Rectangle(982, 220, 0, 0), new int[] { -12, -6, -39 }, 3, 230, 20, 5, 1),
+                },
+                 new List<Entity>
+                {
+                      new Entity
+                     (
+                         new MovingSprite(new Rectangle(560, 420, 20, 20), new int[]{1,1}, new int[]{1,-1},Color.Orange, 0)
+                     ),
                 }
                 ),
 #endregion
@@ -272,8 +292,8 @@ namespace Lighting_Test
                         0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,
                         0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
                         0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
-                        1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
-                        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+                        1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,
+                        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
                         0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
                         0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
                         0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
@@ -282,9 +302,70 @@ namespace Lighting_Test
                 },
                 new List<Light>
                 {
-                       new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 170, 200, 130, 80, 0),
-                       new Light(new Rectangle(980, 820, 0, 0), new int[] { -60, 0, -180 }, 100, 220, 40, 10, 0)
-    }
+                       new Light(new Rectangle(580, 320, 0, 0), new int[] { -180, -60, 0 }, 170, 200, 130, 80, 0),
+                       new Light(new Rectangle(980, 820, 0, 0), new int[] { 15, 10, -180 }, 100, 220, 40, 10, 0)
+    },
+                 new List<Entity>
+                {
+                }
+                ),
+#endregion
+                       #region 0,3
+            new Level
+            (
+                new List<int>{
+                                 30,
+                        4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+                        4,4,1,1,7,1,1,1,1,1,1,1,1,1,4,4,1,1,1,1,1,1,4,4,4,4,4,4,4,4,
+                        4,4,1,1,7,1,1,7,7,7,1,1,1,1,4,4,1,1,1,1,1,1,1,1,1,4,4,4,4,4,
+                        4,4,7,7,7,1,1,7,7,7,1,1,1,1,4,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,
+                        4,4,1,1,7,1,7,1,1,1,7,1,1,1,4,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,
+                        4,4,1,1,7,1,7,1,1,1,7,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,1,4,4,4,
+                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,4,4,4,4,
+                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,4,4,4,4,
+                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,1,1,1,1,1,1,1,1,1,1,4,4,
+                        4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
+                        4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
+                        1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,
+                        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,
+                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
+                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
+                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
+                        4,4,4,4,4,4,4,4,4,4,1,1,1,1,1,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
+                        4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+
+                },
+                new List<int>
+                {
+                  30,
+                        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                        0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,
+                        0,0,1,1,1,1,1,7,7,7,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,
+                        0,0,1,1,1,1,1,7,7,7,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                        0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+                        0,0,1,1,7,1,7,1,1,1,7,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+                        0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,
+                        0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,
+                        0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,
+                        0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                        0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                        1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,2,2,2,0,
+                        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+                        0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                        0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+                        0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+                        0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+                        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,0,0,0,0,0,0,
+                },
+                new List<Light>
+                {
+                       new Light(new Rectangle(580, 320, 0, 0), new int[] { -10, -160, 0 }, 170, 200, 130, 80, 0),
+                       new Light(new Rectangle(0, -100, 0, 0), new int[] { 15, 10, -180 }, 100, 220, 40, 10, 1),
+                       new Light(new Rectangle(1000, -100, 0, 0), new int[] { 15, 10, -180 }, 100, 220, 40, 10, 0),
+    },
+                 new List<Entity>
+                {
+                }
                 ),
 #endregion
         },
@@ -297,24 +378,24 @@ namespace Lighting_Test
             (
                 new List<int>{
                   30,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        16,16,16,16,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,17,17,17,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,16,16,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,16,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,7,7,7,18,7,18,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,7,11,18,18,18,7,7,7,7,7,7,7,7,7,16,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,12,11,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,12,7,7,7,7,7,7,7,7,7,7,7,7,7,16,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,12,7,7,7,7,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,12,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,12,7,7,7,7,7,7,7,7,15,15,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,13,13,13,13,7,7,7,15,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,18,7,14,14,14,13,7,13,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,18,18,7,7,7,18,7,14,7,14,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,7,7,7,7,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,7,7,7,7,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,7,7,7,7,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,11,
                 },
                 new List<int>
                 {
@@ -341,7 +422,18 @@ namespace Lighting_Test
                 new List<Light>
                 {
                     new Light(new Rectangle(580, 320, 0, 0), new int[] { 40000,400000,40000 },4440, 2400, 4130, 8440, 0),
-                    new Light(new Rectangle(380, 120, 0, 0), new int[] { 12, -6, 39 }, 80, 200, 50, 30, 0)
+                          new Light(new Rectangle(580, 320, 0, 0), new int[] { -180, -60, 0 }, 170, 230, 130, 80, 1),
+                    new Light(new Rectangle(380, 120, 0, 0), new int[] { 32, 0, 29 }, 80, 200, 50, 30, 0),
+                    new Light(new Rectangle(380, 120, 0, 0), new int[] { 32, 0, 29 }, 80, 210, 50, 30, 0),
+                    new Light(new Rectangle(180,120, 0, 0), new int[] { 32, 12, -29 }, 80, 200, 50, 30, 0),
+
+                },
+                 new List<Entity>
+                {
+                          new Entity
+                     (
+                         new MovingSprite(new Rectangle(560, 420, 20, 20), new int[]{2,3}, new int[]{-1,1},Color.Lime, 0)
+                     ),
                 }
                 ),
             #endregion
@@ -349,25 +441,25 @@ namespace Lighting_Test
             new Level
             (
                 new List<int>{
-                 30,
-                        4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
-                        4,4,1,1,7,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,4,4,4,4,4,4,4,
-                        4,4,1,1,7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,
-                        4,4,7,7,7,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,
-                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,
-                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,1,4,4,4,
-                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
-                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,1,1,1,1,1,1,1,1,4,4,4,4,
-                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
-                        4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
-                        4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
-                        1,1,1,1,1,1,4,1,1,1,4,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                        1,1,1,1,1,1,4,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
-                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,
-                        4,4,1,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,
-                        4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,
-                        4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+                      30,
+                        16,16,16,16,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,17,17,17,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,16,16,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,16,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,7,7,7,18,7,18,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,7,11,18,18,18,7,7,7,7,7,7,7,7,7,16,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,12,11,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,12,7,7,7,7,7,7,7,7,7,7,7,7,7,16,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,7,7,12,7,7,7,7,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,12,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,12,7,7,7,7,7,7,7,7,15,15,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,13,13,13,13,7,7,7,15,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,18,7,14,14,14,13,7,13,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,18,18,7,7,7,18,7,14,7,14,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+                        7,7,7,7,17,7,7,7,7,7,18,7,7,7,7,7,7,7,7,7,7,7,7,7,18,11,7,7,7,7,
+                        7,7,7,7,17,7,7,7,7,7,18,7,7,7,7,7,7,7,7,7,7,7,7,7,17,7,7,7,7,7,
+                        7,7,7,7,17,7,7,7,7,7,18,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,11,
 
                 },
                 new List<int>
@@ -394,9 +486,12 @@ namespace Lighting_Test
                 },
                 new List<Light>
                 {
-                       new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 170, 200, 130, 80, 0),
+                                      new Light(new Rectangle(580, 320, 0, 0), new int[] { 40000,400000,40000 },4440, 2400, 4130, 8440, 0),
                 //new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 0),
-                new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 0),
+                new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -26, -329 }, 70, 200, 40, 5, 0),
+                },
+                 new List<Entity>
+                {
                 }
                 ),
 #endregion
@@ -449,10 +544,14 @@ namespace Lighting_Test
                 },
                 new List<Light>
                 {
-                       new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 170, 200, 130, 80, 0),
-                       new Light(new Rectangle(980, 820, 0, 0), new int[] { -60, 0, -180 }, 100, 220, 40, 10, 0)
-    }
-                ),
+                       new Light(new Rectangle(580, 320, 0, 0), new int[] { -52, 3, -180 }, 100, 230, 10, 130, 0),
+                       new Light(new Rectangle(980, 520, 0, 0), new int[] { -60, -120, -180 }, 10, 240, 40, 10, 0),
+                         new Light(new Rectangle(380, 420, 0, 0), new int[] { -60, -120, -180 }, 60, 100, 40, 10, -1)
+    },
+                 new List<Entity>
+                {
+                }
+                )
 #endregion
         },
         
@@ -511,21 +610,21 @@ namespace Lighting_Test
         },
               new int[]{ //7
             15,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
-            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
-            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
-            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
-            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
-            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
-            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,
+            1,2,3,3,1,2,3,4,4,2,1,2,3,3,1,
+            1,3,1,2,1,2,4,2,3,2,1,3,1,2,1,
+            1,2,3,2,1,2,3,4,3,2,1,2,3,2,1,
+            1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,
+            1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,
+            1,2,3,3,1,2,3,4,3,2,1,2,3,3,1,
+            1,3,1,2,1,2,4,2,2,2,1,3,1,2,1,
+            1,2,3,2,1,2,3,4,2,2,1,2,3,2,1,
+            1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,
+            1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,
+            1,2,3,3,1,2,3,4,3,2,1,2,3,3,1,
+            1,3,1,2,1,2,4,2,2,2,1,3,1,2,1,
+            1,2,3,2,1,2,3,4,3,2,1,2,3,2,1,
+            1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,
         },
             new int[]{ //8
             3,
@@ -545,12 +644,158 @@ namespace Lighting_Test
             7,8,7,
             10,8,12,
         },
+                       new int[]{ //11
+            15,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
+            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
+            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
+            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
+            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
+            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
+            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        },
+            new int[]{ //12
+            15,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
+            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
+            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+            2,3,4,4,2,2,3,4,4,2,2,3,4,4,2,
+            2,4,2,3,2,2,4,2,3,2,2,4,2,3,2,
+            2,3,4,3,2,2,3,4,3,2,2,3,4,3,2,
+            2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,2,3,3,1,1,2,3,3,1,1,2,3,3,1,
+            1,3,1,2,1,1,3,1,2,1,1,3,1,2,1,
+            1,2,3,2,1,1,2,3,2,1,1,2,3,2,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        },
+               new int[]{ //13
+             15,
+            1,2,5,1,2,5,1,2,5,1,2,5,1,2,5,
+            2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,
+            5,1,3,5,1,3,5,1,3,5,1,3,5,1,3,
+            1,2,5,1,2,5,1,2,5,1,2,5,1,2,5,
+            2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,
+            5,1,3,5,1,3,5,1,3,5,1,3,5,1,3,
+            1,2,5,1,2,5,1,2,5,1,2,5,1,2,5,
+            2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,
+            5,1,3,5,1,3,5,1,3,5,1,3,5,1,3,
+            1,2,5,1,2,5,1,2,5,1,2,5,1,2,5,
+            2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,
+            5,1,3,5,1,3,5,1,3,5,1,3,5,1,3,
+            1,2,5,1,2,5,1,2,5,1,2,5,1,2,5,
+            2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,
+            5,1,3,5,1,3,5,1,3,5,1,3,5,1,3,
+        },
+                 new int[]{ //14
+             15,
+         3,2,3,2,3,3,2,3,2,3,3,2,3,2,3,
+         2,3,1,3,2,2,3,1,3,2,2,3,1,3,2,
+         3,1,0,1,3,3,1,0,1,3,3,1,0,1,3,
+         2,3,1,3,2,2,3,1,3,2,2,3,1,3,2,
+         3,2,3,2,3,3,2,3,2,3,3,2,3,2,3,
+         3,2,3,2,3,3,2,3,2,3,3,2,3,2,3,
+         2,3,1,3,2,2,3,1,3,2,2,3,1,3,2,
+         3,1,0,1,3,3,1,0,1,3,3,1,0,1,3,
+         2,3,1,3,2,2,3,1,3,2,2,3,1,3,2,
+         3,2,3,2,3,3,2,3,2,3,3,2,3,2,3,
+         3,2,3,2,3,3,2,3,2,3,3,2,3,2,3,
+         2,3,1,3,2,2,3,1,3,2,2,3,1,3,2,
+         3,1,0,1,3,3,1,0,1,3,3,1,0,1,3,
+         2,3,1,3,2,2,3,1,3,2,2,3,1,3,2,
+         3,2,3,2,3,3,2,3,2,3,3,2,3,2,3,
+                 },
+                 new int[]{ //15
+             15,
+             1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,
+             2,0,0,0,2,1,0,0,0,2,1,0,0,0,1,
+             5,2,3,2,5,1,2,3,2,5,1,2,3,2,1,
+             1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,
+             2,0,0,0,2,1,0,0,0,2,1,0,0,0,1,
+             5,2,3,2,5,1,2,3,2,5,1,2,3,2,1,
+             1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,
+             2,0,0,0,2,1,0,0,0,2,1,0,0,0,1,
+             5,2,3,2,5,1,2,3,2,5,1,2,3,2,1,
+             1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,
+             2,0,0,0,2,1,0,0,0,2,1,0,0,0,1,
+             5,2,3,2,5,1,2,3,2,5,1,2,3,2,1,
+             1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,
+             2,0,0,0,2,1,0,0,0,2,1,0,0,0,1,
+             5,2,3,2,5,1,2,3,2,5,1,2,3,2,1,
+                 },
+                           new int[]{ //16
+             15,
+            1,0,0,1,1,2,3,4,3,2,1,1,0,0,1,
+            0,2,3,0,2,3,4,5,4,3,2,0,3,2,0,
+            0,3,4,5,4,4,4,4,4,4,4,4,4,3,0,
+            1,0,0,1,1,2,3,4,3,2,1,1,0,0,1,
+            0,2,3,0,2,3,4,5,4,3,2,0,3,2,0,
+            0,3,4,5,4,4,4,4,4,4,4,4,4,3,0,
+            1,0,0,1,1,2,3,4,3,2,1,1,0,0,1,
+            0,2,3,0,2,3,4,5,4,3,2,0,3,2,0,
+            0,3,4,5,4,4,4,4,4,4,4,4,4,3,0,
+            1,0,0,1,1,2,3,4,3,2,1,1,0,0,1,
+            0,2,3,0,2,3,4,5,4,3,2,0,3,2,0,
+            0,3,4,5,4,4,4,4,4,4,4,4,4,3,0,
+            1,0,0,1,1,2,3,4,3,2,1,1,0,0,1,
+            0,2,3,0,2,3,4,5,4,3,2,0,3,2,0,
+            0,3,4,5,4,4,4,4,4,4,4,4,4,3,0,
+
+                           },
+                                new int[]{ //17
+             15,
+             1,3,0,0,1,1,0,0,0,1,1,0,0,0,1,
+             2,0,0,0,2,1,0,0,0,2,1,0,0,0,1,
+             5,4,5,2,5,1,2,3,2,5,1,2,3,2,1,
+             1,0,0,0,1,1,0,0,4,0,0,0,0,0,1,
+             2,1,2,3,2,1,0,2,2,0,0,0,0,0,1,
+             5,2,3,2,5,1,2,3,2,5,1,2,3,2,1,
+             1,0,0,0,1,1,0,0,0,0,1,0,0,0,1,
+             2,1,4,0,2,1,0,0,0,2,1,0,0,0,1,
+             5,2,0,2,5,1,2,3,2,5,1,2,3,2,1,
+             1,0,4,5,1,1,5,0,0,0,1,0,0,0,1,
+             2,0,0,0,2,1,0,0,0,2,1,0,0,0,1,
+             5,2,1,0,5,1,2,3,2,5,1,2,3,2,1,
+             1,0,0,0,1,1,2,0,4,1,0,0,0,0,1,
+             2,0,0,0,2,1,0,0,0,2,0,0,0,0,1,
+             5,2,3,2,5,1,2,3,2,5,1,2,3,2,1,
+                 },
+                                new int[]{ //18
+             15,
+             0,0,0,10,0,0,0,0,5,0,0,0,10,10,1,
+             0,0,10,0,0,0,0,0,0,0,11,10,0,0,1,
+             5,4,1,12,5,1,0,0,2,5,1,2,3,2,1,
+             1,0,0,1,11,1,0,0,4,0,10,0,10,0,1,
+             2,1,2,3,1,1,5,2,2,0,10,0,10,0,1,
+             5,2,3,2,5,1,2,3,2,5,1,2,3,2,1,
+             1,0,0,0,1,1,1,0,0,0,1,0,10,0,2,
+             2,1,4,0,21,11,10,2,10,2,1,10,10,10,7,
+             5,2,10,2,5,1,2,3,3,5,1,2,3,2,6,
+             1,10,4,5,1,1,5,7,10,2,1,10,10,10,5,
+             2,10,10,10,2,1,1,3,3,2,3,10,10,10,4,
+             5,2,1,0,5,1,2,3,4,5,1,2,3,2,3,
+             1,10,10,10,1,1,2,10,5,5,10,10,3,10,3,
+             2,10,10,10,2,1,10,10,10,2,10,10,10,3,2,
+             5,2,3,2,5,1,2,3,2,5,1,2,3,2,2,
+                 },
         };
         #endregion
 
         #region Load
         public Form1()
         {
+
             InitializeComponent();
             player = new Rectangle(580, 320, 0, 0);
             lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 0));
@@ -559,7 +804,7 @@ namespace Lighting_Test
             playerYCheck = new Rectangle(0, 0, 0, 0);
 
 
-            
+
             //lightList.Add(new Light(new Rectangle(680, 120, 0, 0), new int[] { 6, -126, -39 }, 80, 240, 50, 30, 0));
             //lightList.Add(new Light(new Rectangle(980, 620, 0, 0), new int[] { -122, -6, -39 }, 70, 200, 40, 5, 0));
 
@@ -596,6 +841,7 @@ namespace Lighting_Test
                 movingSprites.RemoveAt(0);
             }
             #endregion
+            oldPlayer = player;
 
             //FOR SOME REASON PLAYER SPEED IS LACKING, LOOK INTO IT.
             if (stopwatch.ElapsedMilliseconds % speedInteger == 0)
@@ -626,7 +872,7 @@ namespace Lighting_Test
                     xYSpeed[y] -= 2;
                 }
 
-                if (WSAD[0] == false || stopwatch.ElapsedMilliseconds - previousJump > jumpInterval / 2)
+                if (WSAD[0] == false || stopwatch.ElapsedMilliseconds - previousJump > jumpInterval / 2 || (canMoveUpDownLeftRight[up] == -1 && stopwatch.ElapsedMilliseconds - previousJump > jumpInterval / 3))
                 {
                     xYSpeed[y] = 0;
                     jumpState = "accelerating";
@@ -748,6 +994,39 @@ namespace Lighting_Test
             //    }
             //}
             #endregion
+
+            try
+            {
+                foreach (Entity entity in currentEntities)
+                {
+                    redrawList.Add(new Rectangle(entity.sprite.body.X, entity.sprite.body.Y, entity.sprite.body.Width, entity.sprite.body.Height));
+
+                    //Check for moving through levels
+                    int levelXChange = entity.levelPassCheck(this.Height, this.Width).Item1;
+                    int levelYChange = entity.levelPassCheck(this.Height, this.Width).Item2;
+                    int xCoord = entity.levelPassCheck(this.Height, this.Width).Item3;
+                    int yCoord = entity.levelPassCheck(this.Height, this.Width).Item4;
+
+                    //if entity has passed through a level, change its position, add it to the level, and remove them from this current level
+                    if (levelXChange != 0 || levelYChange != 0)
+                    {
+                        entity.sprite.body.Location = new Point(xCoord, yCoord);
+                        allLevels[currentLevelY + levelYChange][currentLevelX + levelXChange].entities.Add(entity);
+                        currentEntities.Remove(entity);
+                    }
+                    else
+                    {
+
+                        //Move entities
+                        entity.adjustSpeeds(Convert.ToInt32(stopwatch.ElapsedMilliseconds), player);
+                        entity.moveEntity(currentTiles, currentLevelY, currentLevelX, allLevels);
+                       
+                    }
+                }
+            }
+            catch { }
+
+
             #region Move Player TRY 2
 
             canMoveUpDownLeftRight[up] = 0;
@@ -933,6 +1212,7 @@ namespace Lighting_Test
             currentTileDepths.Clear();
             currentTilePixels.Clear();
             movingSprites.Clear();
+            currentEntities = level.entities;
             lightList = level.lights;
 
             //levelY keeps track of the 'Y' axis of the tile we are placing in the level
@@ -1013,7 +1293,7 @@ namespace Lighting_Test
                 levelRenderer = smallPaint;
             }
 
-        levelRenderer(true);
+            levelRenderer(true);
         }
         #endregion
 
@@ -1036,7 +1316,7 @@ namespace Lighting_Test
         void largePaint(bool loadWholeLevel)
         {
             if (loadWholeLevel) { Refresh(); }
-         
+
             //Setting up the pixel colors list
             if (currentPixelColors.Count != currentTilePixels.Count)
             {
@@ -1048,7 +1328,6 @@ namespace Lighting_Test
                     currentPixelColors.Add(Color.White);
                 }
             }
-
             //For each rectangle on screen
             for (int n = 0; n < currentTilePixels.Count; n++)
             {
@@ -1084,61 +1363,62 @@ namespace Lighting_Test
                         catch { movingSprites.RemoveAt(intersectsWith); }
                     }
                 }
-                else if (GetLength(currentTilePixels[n], player) < 103 || loadWholeLevel == true)
+                int redrawSample = redrawCheck(currentTilePixels[n], redrawList);
+
+                if ((currentTilePixels[n].IntersectsWith(oldPlayer)) || loadWholeLevel == true || redrawSample != -1)
                 {
-                    if (currentTilePixels[n].IntersectsWith(player))
+                    //Reset the trueRgb array
+                    trueRgb = new double[3] { 0, 0, 0 };
+
+                    //For each light that can affect the rectangle (lights on screen)
+                    for (int i = Convert.ToInt32(loadWholeLevel); i < lightList.Count; i++)
                     {
-                        sampleColor = Color.White;
-                        if (currentPixelColors[n] != sampleColor)
+                        //For each Red, Green, Or blue value of the rectangle's color
+                        for (int num = 0; num < 3; num++)
                         {
-                            currentPixelColors[n] = sampleColor;
-
-                            e.FillRectangle(new SolidBrush(sampleColor), currentTilePixels[n]);
+                            //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
+                            if (currentPixelDepths[n] > lightList[i].depth)
+                            {
+                                lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
+                            }
+                            if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
+                            if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
+                            if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
+                            if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
                         }
-
+                        //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
+                        for (int j = 0; j < 3; j++)
+                        {
+                            if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
+                            {
+                                trueRgb[j] = lightList[i].rgbStorage[j];
+                            }
+                        }
                     }
-                    else
+                    sampleColor = (Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2])));
+
+                   
+                    //To avoid drawing things over again (This is reducing lag!)
+                    if (currentPixelColors[n] != sampleColor || currentTilePixels[n].IntersectsWith(oldPlayer) || redrawSample != -1)
                     {
-                        //Reset the trueRgb array
-                        trueRgb = new double[3] { 0, 0, 0 };
+                        currentPixelColors[n] = sampleColor;
+                        try { e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]); }
+                        catch { }
 
-                        //For each light that can affect the rectangle (lights on screen)
-                        for (int i = Convert.ToInt32(loadWholeLevel); i < lightList.Count; i++)
+                        //If we would be covering the player, redraw the player. We *SHOULD* be able to draw the player only once at the end, however because it takes a long time to render each tile, there is a noticable flicker.
+                        if (currentTilePixels[n].IntersectsWith(player))
+                        { e.FillRectangle(whiteBrush, player); }
+                        if (redrawSample != -1 && currentEntities.Count > redrawSample)
                         {
-                            //For each Red, Green, Or blue value of the rectangle's color
-                            for (int num = 0; num < 3; num++)
-                            {
-                                //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
-                                if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
-                                {
-                                    lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
-                                }
-                                if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
-                                if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
-                                if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
-                                if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
-                            }
-                            //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
-                            for (int j = 0; j < 3; j++)
-                            {
-                                if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
-                                {
-                                    trueRgb[j] = lightList[i].rgbStorage[j];
-                                }
-                            }
-                        }
-                        sampleColor = (Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2])));
-
-                        //To avoid drawing things over again (This is reducing lag!)
-                        if (currentPixelColors[n] != sampleColor)
-                        {
-                            currentPixelColors[n] = sampleColor;
-                            try { e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]); }
-                            catch { }
+                            e.FillRectangle(new SolidBrush(currentEntities[redrawSample].sprite.color), currentEntities[redrawSample].sprite.body);
                         }
                     }
                 }
             }
+
+            e.FillRectangle(whiteBrush, player);
+            drawEntities();
+            redrawList.Clear();
         }
         #endregion
 
@@ -1159,56 +1439,59 @@ namespace Lighting_Test
             //For each rectangle on screen
             for (int n = 0; n < currentTilePixels.Count; n++)
             {
-                if (currentTilePixels[n].IntersectsWith(player))
+                //Reset the trueRgb array
+                trueRgb = new double[3] { 0, 0, 0 };
+
+                //For each light that can affect the rectangle (lights on screen)
+                for (int i = Convert.ToInt32(loadWholeLevel); i < lightList.Count; i++)
                 {
-                    sampleColor = Color.White;
-                    if (currentPixelColors[n] != sampleColor)
+                    //For each Red, Green, Or blue value of the rectangle's color
+                    for (int num = 0; num < 3; num++)
                     {
-                        currentPixelColors[n] = sampleColor;
-                        e.FillRectangle(new SolidBrush(sampleColor), currentTilePixels[n]);
+                        //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
+                        if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
+                        {
+                            lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
+                        }
+                        if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
+                        if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
+                        if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
+                        if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
+                    }
+                    //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
+                    for (int j = 0; j < 3; j++)
+                    {
+                        if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
+                        {
+                            trueRgb[j] = lightList[i].rgbStorage[j];
+                        }
                     }
                 }
-                else
+                sampleColor = (Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2])));
+
+                int redrawSample = redrawCheck(currentTilePixels[n], redrawList);
+
+                //To avoid drawing things over again (This is reducing lag!)
+                if (currentPixelColors[n] != sampleColor || currentTilePixels[n].IntersectsWith(oldPlayer) || currentTilePixels[n].IntersectsWith(player) || loadWholeLevel || redrawSample != -1)
                 {
-                    //Reset the trueRgb array
-                    trueRgb = new double[3] { 0, 0, 0 };
+                    currentPixelColors[n] = sampleColor;
+                    //try {
+                        e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]); 
+                    //}
+                    //catch { }
 
-                    //For each light that can affect the rectangle (lights on screen)
-                    for (int i = Convert.ToInt32(loadWholeLevel); i < lightList.Count; i++)
+                    //If we would be covering the player, redraw the player. We *SHOULD* be able to draw the player only once at the end, however because it takes a long time to render each tile, there is a noticable flicker.
+                    if (currentTilePixels[n].IntersectsWith(player))
+                    { e.FillRectangle(whiteBrush, player); }
+                    if (redrawSample != -1 && currentEntities.Count > redrawSample)
                     {
-                        //For each Red, Green, Or blue value of the rectangle's color
-                        for (int num = 0; num < 3; num++)
-                        {
-                            //If the rectangle is in range of the light (rectangle would not be siloughetted by the light in 3D space)
-                            if (currentTileDepths[n] >= lightList[i].depth && currentPixelDepths[n] > lightList[i].depth)
-                            {
-                                lightList[i].rgbStorage[num] = (20000 / GetLength(lightList[i].body, currentTilePixels[n]) / (currentPixelDepths[n] - (lightList[i].depth))) + lightList[i].rgbAffectors[num];
-                            }
-                            if (lightList[i].rgbStorage[num] > lightList[i].lightenPoint) { lightList[i].rgbStorage[num] += 20; }
-                            if (lightList[i].rgbStorage[num] > lightList[i].maxBright) { lightList[i].rgbStorage[num] = lightList[i].maxBright; }
-                            if (lightList[i].rgbStorage[num] < lightList[i].darkenPoint) { lightList[i].rgbStorage[num] -= 12; }
-                            if (lightList[i].rgbStorage[num] < lightList[i].blackPoint) { lightList[i].rgbStorage[num] = 0; }
-                        }
-                        //Now that we have found the way the lights affect all pixels, find the brightest light per pixel
-                        for (int j = 0; j < 3; j++)
-                        {
-                            if (lightList[i].rgbStorage[j] > trueRgb[j] && currentTileDepths[n] >= lightList[i].depth)
-                            {
-                                trueRgb[j] = lightList[i].rgbStorage[j];
-                            }
-                        }
+                            e.FillRectangle(new SolidBrush(currentEntities[redrawSample].sprite.color), currentEntities[redrawSample].sprite.body);
                     }
-                    sampleColor = (Color.FromArgb(Convert.ToInt32(trueRgb[0]), Convert.ToInt32(trueRgb[1]), Convert.ToInt32(trueRgb[2])));
 
-                    //To avoid drawing things over again (This is reducing lag!)
-                    if (currentPixelColors[n] != sampleColor || loadWholeLevel)
-                    {
-                        currentPixelColors[n] = sampleColor;
-                        try { e.FillRectangle(new SolidBrush(currentPixelColors[n]), currentTilePixels[n]); }
-                        catch { }
-                    }
                 }
             }
+            drawEntities();
+            redrawList.Clear();
         }
         #endregion
 
@@ -1231,5 +1514,24 @@ namespace Lighting_Test
             }
             return -1;
         }
+
+        int redrawCheck(Rectangle rectangle, List<Rectangle> list)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (rectangle.IntersectsWith(list[i]))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        void drawEntities()
+        {
+            foreach (Entity entity in currentEntities) { e.FillRectangle(new SolidBrush(entity.sprite.color), entity.sprite.body); }
+        }
+
+        public void EntityWarp() { }
     }
 }

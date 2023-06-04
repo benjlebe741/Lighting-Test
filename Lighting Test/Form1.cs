@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
@@ -51,17 +52,7 @@ namespace Lighting_Test
 
         int maxSprites = 1;
 
-        int largestSize = 50;
-        int largestSubtraction = 1;
-        int redAddition = 10;
-        int greenAddition = 50;
-        int blueAddition = 20;
-        int bioluminescenceSize = 5;
-
-        int sampleSuppressor = 4;
-
-        int chanceOfSpawn = 45;
-        int chanceOfRemoval = 90;
+        int largestSize, largestSubtraction, redAddition, greenAddition,blueAddition, bioluminescenceSize, sampleSuppressor, chanceOfSpawn, chanceOfRemoval;
 
 
         int sampleSpriteSize;
@@ -188,7 +179,21 @@ namespace Lighting_Test
                      (
                          new MovingSprite(new Rectangle(30, 560, 20, 20), new int[]{4,1}, new int[]{1,0},Color.Red, 0)
                      ),
-                }
+                 },
+                   new int[]
+            {
+        10, //largestSize
+        1,  //largestSubtraction
+        40, //redAddition
+        1, //greenAddition
+        1, //blueAddition
+        2,  //bioluminescenceSize
+
+        1,  //sampleSuppressor
+
+        45, //chanceOfSpawn
+        90, //chanceOfRemoval
+    }
                 ),
             #endregion
             #region 0,1
@@ -251,7 +256,21 @@ namespace Lighting_Test
                      (
                          new MovingSprite(new Rectangle(560, 420, 20, 20), new int[]{1,1}, new int[]{1,-1},Color.Orange, 0)
                      ),
-                }
+                },
+                   new int[]
+            {
+             10, //largestSize
+        1,  //largestSubtraction
+        30, //redAddition
+        40, //greenAddition
+        1, //blueAddition
+        0,  //bioluminescenceSize
+
+        1,  //sampleSuppressor
+
+        25, //chanceOfSpawn
+        90, //chanceOfRemoval
+    }
                 ),
 #endregion
             #region 0,2
@@ -308,10 +327,24 @@ namespace Lighting_Test
     },
                  new List<Entity>
                 {
-                }
+                },
+                   new int[]
+            {
+                10, //largestSize
+        1,  //largestSubtraction
+        1, //redAddition
+        40, //greenAddition
+        30, //blueAddition
+        0,  //bioluminescenceSize
+
+        1,  //sampleSuppressor
+
+        25, //chanceOfSpawn
+        90, //chanceOfRemoval
+    }
                 ),
 #endregion
-                       #region 0,3
+            #region 0,3
             new Level
             (
                 new List<int>{
@@ -366,7 +399,21 @@ namespace Lighting_Test
     },
                  new List<Entity>
                 {
-                }
+                },
+                   new int[]
+            {
+               10, //largestSize
+        1,  //largestSubtraction
+        30, //redAddition
+        40, //greenAddition
+        1, //blueAddition
+        0,  //bioluminescenceSize
+
+        1,  //sampleSuppressor
+
+        25, //chanceOfSpawn
+        90, //chanceOfRemoval
+    }
                 ),
 #endregion
         },
@@ -374,7 +421,7 @@ namespace Lighting_Test
         //Y = 1
         new Level[]
         {
-       #region 1,0
+            #region 1,0
             new Level
             (
                 new List<int>{
@@ -435,7 +482,21 @@ namespace Lighting_Test
                      (
                          new MovingSprite(new Rectangle(560, 420, 20, 20), new int[]{2,3}, new int[]{-1,1},Color.Lime, 0)
                      ),
-                }
+                },
+                   new int[]
+            {
+               10, //largestSize
+        1,  //largestSubtraction
+        30, //redAddition
+        40, //greenAddition
+        1, //blueAddition
+        0,  //bioluminescenceSize
+
+        1,  //sampleSuppressor
+
+        25, //chanceOfSpawn
+        90, //chanceOfRemoval
+    }
                 ),
             #endregion
             #region 1,1
@@ -493,7 +554,21 @@ namespace Lighting_Test
                 },
                  new List<Entity>
                 {
-                }
+                },
+                   new int[]
+            {
+        50, //largestSize
+        1,  //largestSubtraction
+        10, //redAddition
+        50, //greenAddition
+        20, //blueAddition
+        5,  //bioluminescenceSize
+
+        4,  //sampleSuppressor
+
+        45, //chanceOfSpawn
+        90, //chanceOfRemoval
+    }
                 ),
 #endregion
             #region 1,2
@@ -551,7 +626,21 @@ namespace Lighting_Test
     },
                  new List<Entity>
                 {
-                }
+                },
+                   new int[]
+            {
+                10, //largestSize
+        1,  //largestSubtraction
+        30, //redAddition
+        20, //greenAddition
+        1, //blueAddition
+        0,  //bioluminescenceSize
+
+        1,  //sampleSuppressor
+
+        25, //chanceOfSpawn
+        90, //chanceOfRemoval
+    }
                 )
 #endregion
         },
@@ -1119,6 +1208,20 @@ namespace Lighting_Test
         {
             Level level = allLevels[currentLevelY][currentLevelX];
 
+            #region vines
+
+            largestSize = level.vineInfo[0];
+            largestSubtraction = level.vineInfo[1];
+            redAddition = level.vineInfo[2];
+            greenAddition = level.vineInfo[3];
+            blueAddition = level.vineInfo[4];
+            bioluminescenceSize = level.vineInfo[5];
+            sampleSuppressor = level.vineInfo[6];
+            chanceOfSpawn = level.vineInfo[7];
+            chanceOfRemoval = level.vineInfo[8];
+
+            #endregion
+
             this.Width = tileWidth * 30;
             this.Height = tileWidth * ((level.depths.Count - 1) / 30);
             this.CenterToScreen();
@@ -1457,15 +1560,42 @@ namespace Lighting_Test
         void playerAttack(Size range)
         {
             //Attack position based on entity: Start with entity position, and add attack position based on entity direction
-            Point attackPoint = new Point((player.X + player.Width / 2) - range.Width / 2, (player.Y + player.Height / 2) - range.Height / 2);
+            int xDir = 0;
+            int yDir = 0;
+            Point _player = new Point(player.X + player.Width / 2, player.Y + player.Height / 2);
+
+            Point attackPoint = new Point(_player.X - range.Width / 2, _player.Y - range.Height / 2);
+            #region Attack based on mouse
+            Point mouse = new Point(Cursor.Position.X + ((this.Width - Screen.FromControl(this).Bounds.Width) / 2), Cursor.Position.Y + ((this.Height - Screen.FromControl(this).Bounds.Height) / 2));
+
+            int xDiff = (mouse.X - _player.X);
+            int yDiff = (mouse.Y - _player.Y);
+
+            if (xDiff != 0 && Math.Abs(xDiff) > 30)
+            {
+                xDir = xDiff / Math.Abs(xDiff);
+            }
+
+            if (yDiff != 0 && Math.Abs(yDiff) > 30)
+            {
+                yDir = yDiff / Math.Abs(yDiff);
+            }
+            #endregion
+            #region Attack based on direction
+            //if (WSAD[0] == false && WSAD[1] == true) { yDir = 1; }
+            //else if (WSAD[1] == false && WSAD[0] == true) { yDir = -1; }
+
+            //if (WSAD[2] == false && WSAD[3] == true) { xDir = 1; }
+            //else if (WSAD[3] == false && WSAD[2] == true) { xDir = -1; }
+            #endregion
 
             //Create instance of attack entity
             currentEntities.Add(
                 new Entity(
                     new MovingSprite(
                         new Rectangle(attackPoint, range),
-                        new int[] { 0, 0 },
-                        new int[] { 0, 0 },
+                        new int[] { 9, 9 },
+                        new int[] { xDir, yDir },
                         Color.Red,
                         0),
                     400,
@@ -1477,7 +1607,7 @@ namespace Lighting_Test
 
         private void Form1_MouseClick(object sender, MouseEventArgs e)
         {
-            playerAttack(new Size(60, 60));
+            playerAttack(new Size(6, 6));
         }
 
 

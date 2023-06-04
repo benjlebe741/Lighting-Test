@@ -43,12 +43,16 @@ namespace Lighting_Test
         public int lifespan = 0;
         public int birth = 0;
         public bool immortal = true;
+
+        //'Immortal' entities; enemies, player etc!
         public Entity(MovingSprite _sprite)
         {
             sprite = _sprite;
             entityXCheck = new Rectangle(0, 0, sprite.body.Width + 2, sprite.body.Height); ;
             entityYCheck = new Rectangle(0, 0, sprite.body.Width, sprite.body.Height + 2);
         }
+
+        //'dying' entities; attacks, particles? elements that dont pass through levels and dissapear eventually, these also can hold a specific direction they travel in, not automous
         public Entity(MovingSprite _sprite, int _lifeSpan, int _birth)
         {
             sprite = _sprite;
@@ -56,59 +60,64 @@ namespace Lighting_Test
             entityYCheck = new Rectangle(0, 0, sprite.body.Width, sprite.body.Height + 2);
             lifespan = _lifeSpan;
             birth = _birth;
+
             immortal = false;
+
         }
 
         public void adjustSpeeds(int time, Rectangle player)
         {
-            int directionOfPlayer = (player.X - sprite.body.X) / Math.Abs(player.X - sprite.body.X);
-            int playerYdistance = (Math.Abs(player.Y - sprite.body.Y));
+            if (immortal == true)
+            {
+                int directionOfPlayer = (player.X - sprite.body.X) / Math.Abs(player.X - sprite.body.X);
+                int playerYdistance = (Math.Abs(player.Y - sprite.body.Y));
 
-            if (directionOfPlayer == sprite.xyDirection[x] && playerYdistance < 1000)
-            {
-                sprite.xySpeed[x] = maxSpeedX * 2;
-            }
-            else if (sprite.xySpeed[x] >= maxSpeedX) { sprite.xySpeed[x] = 3; }
-
-            //Find out how fast the entity should be moving Horizontally!
-            //gaining momentum based on walking time
-            if (sprite.xySpeed[x] < maxSpeedX && sprite.xyDirection[x] != 0) { sprite.xySpeed[x] += momentumGain; }
-            //losing momentum over time
-            else if (sprite.xySpeed[x] > momentumLoss && sprite.xyDirection[x] == 0) { sprite.xySpeed[x] -= momentumLoss; }
-
-            if (canMoveUpDownLeftRight[down] == 1 && ((canMoveUpDownLeftRight[right] == 1 && sprite.xyDirection[x] == 1) || (canMoveUpDownLeftRight[left] == -1 && sprite.xyDirection[x] == -1)) && time - previousJump > jumpInterval)
-            {
-                newJump(time);
-                sprite.xyDirection[x] = directionOfPlayer;
-            }
-            //Resting: jump speed is at 0
-            else if (canMoveUpDownLeftRight[down] == 1)
-            {
-                sprite.xySpeed[y] = 3;
-                jumpState = "resting";
-            }
-            else if (time - previousJump > jumpInterval / 2 || (canMoveUpDownLeftRight[up] == -1 && time - previousJump > jumpInterval / 3))
-            {
-                jumpState = "accelerating";
-            }
-            else { jumpState = "decelerating"; }
-
-            //Lifting: decrease speed
-            if (jumpState == "decelerating")
-            {
-                sprite.xyDirection[y] = -1;
-                if (sprite.xySpeed[y] > 2)
+                if (directionOfPlayer == sprite.xyDirection[x] && playerYdistance < 1000)
                 {
-                    sprite.xySpeed[y] -= 1;
+                    sprite.xySpeed[x] = maxSpeedX * 2;
                 }
-            }
-            //Falling: increase speed
-            if (jumpState == "accelerating")
-            {
-                sprite.xyDirection[y] = 1;
-                if (sprite.xySpeed[y] < maxSpeedY)
+                else if (sprite.xySpeed[x] >= maxSpeedX) { sprite.xySpeed[x] = 3; }
+
+                //Find out how fast the entity should be moving Horizontally!
+                //gaining momentum based on walking time
+                if (sprite.xySpeed[x] < maxSpeedX && sprite.xyDirection[x] != 0) { sprite.xySpeed[x] += momentumGain; }
+                //losing momentum over time
+                else if (sprite.xySpeed[x] > momentumLoss && sprite.xyDirection[x] == 0) { sprite.xySpeed[x] -= momentumLoss; }
+
+                if (canMoveUpDownLeftRight[down] == 1 && ((canMoveUpDownLeftRight[right] == 1 && sprite.xyDirection[x] == 1) || (canMoveUpDownLeftRight[left] == -1 && sprite.xyDirection[x] == -1)) && time - previousJump > jumpInterval)
                 {
-                    sprite.xySpeed[y] += 2;
+                    newJump(time);
+                    sprite.xyDirection[x] = directionOfPlayer;
+                }
+                //Resting: jump speed is at 0
+                else if (canMoveUpDownLeftRight[down] == 1)
+                {
+                    sprite.xySpeed[y] = 3;
+                    jumpState = "resting";
+                }
+                else if (time - previousJump > jumpInterval / 2 || (canMoveUpDownLeftRight[up] == -1 && time - previousJump > jumpInterval / 3))
+                {
+                    jumpState = "accelerating";
+                }
+                else { jumpState = "decelerating"; }
+
+                //Lifting: decrease speed
+                if (jumpState == "decelerating")
+                {
+                    sprite.xyDirection[y] = -1;
+                    if (sprite.xySpeed[y] > 2)
+                    {
+                        sprite.xySpeed[y] -= 1;
+                    }
+                }
+                //Falling: increase speed
+                if (jumpState == "accelerating")
+                {
+                    sprite.xyDirection[y] = 1;
+                    if (sprite.xySpeed[y] < maxSpeedY)
+                    {
+                        sprite.xySpeed[y] += 2;
+                    }
                 }
             }
         }

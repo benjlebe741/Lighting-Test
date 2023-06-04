@@ -40,11 +40,23 @@ namespace Lighting_Test
         string jumpState;
         int previousJump = 0;
         int jumpInterval = 700;
+        public int lifespan = 0;
+        public int birth = 0;
+        public bool immortal = true;
         public Entity(MovingSprite _sprite)
         {
             sprite = _sprite;
             entityXCheck = new Rectangle(0, 0, sprite.body.Width + 2, sprite.body.Height); ;
             entityYCheck = new Rectangle(0, 0, sprite.body.Width, sprite.body.Height + 2);
+        }
+        public Entity(MovingSprite _sprite, int _lifeSpan, int _birth)
+        {
+            sprite = _sprite;
+            entityXCheck = new Rectangle(0, 0, sprite.body.Width + 2, sprite.body.Height); ;
+            entityYCheck = new Rectangle(0, 0, sprite.body.Width, sprite.body.Height + 2);
+            lifespan = _lifeSpan;
+            birth = _birth;
+            immortal = false;
         }
 
         public void adjustSpeeds(int time, Rectangle player)
@@ -221,6 +233,8 @@ namespace Lighting_Test
             int xCoord = sprite.body.X;
             int yCoord = sprite.body.Y;
 
+            if (immortal == false) { return Tuple.Create(levelXChange, levelYChange, xCoord, yCoord); }
+
             //Entity passes through:
             //Top wall
             if (sprite.body.Y <= (sprite.body.Height / 2))
@@ -249,18 +263,6 @@ namespace Lighting_Test
             return Tuple.Create(levelXChange, levelYChange, xCoord, yCoord);
         }
         #endregion
-
-        public Tuple<bool, int, int> playerIntersection(Rectangle player)
-        {
-            if (player.IntersectsWith(sprite.body))
-            {
-                return Tuple.Create(true, player.X - sprite.body.X, player.Y - sprite.body.Y);
-            }
-            else
-            {
-                return Tuple.Create(false, 0, 0);
-            }
-        }
 
     }
 }

@@ -22,20 +22,27 @@ namespace Lighting_Test
         int left = 2;
         int right = 3;
 
+        //Stores: 0, Sprite of entity 1, Frame of animation
+        public int[] spriteInfo = new int[] { 1, 0 };
+
         public MovingSprite sprite;
         Rectangle oldSprite;
 
         Rectangle entityXCheck;
         Rectangle entityYCheck;
 
-        int maxSpeedX = 5;
+        public string type;
+
+        public int health = 2;
+
+        public double previousHit;
+
+        public int maxSpeedX = 2;
         int maxSpeedY = 25;
         int momentumGain = 3;
         int momentumLoss = 2;
 
         int[] canMoveUpDownLeftRight = new int[4] { 0, 0, 0, 0 };
-
-        int speedInteger = 8;
 
         string jumpState;
         int previousJump = 0;
@@ -45,16 +52,19 @@ namespace Lighting_Test
         public bool immortal = true;
 
         //'Immortal' entities; enemies, player etc!
-        public Entity(MovingSprite _sprite)
+        public Entity(MovingSprite _sprite, int spriteNum)
         {
+            spriteInfo[0] = spriteNum;
             sprite = _sprite;
             entityXCheck = new Rectangle(0, 0, sprite.body.Width + 2, sprite.body.Height); ;
             entityYCheck = new Rectangle(0, 0, sprite.body.Width, sprite.body.Height + 2);
+            type = "creature";
         }
 
         //'dying' entities; attacks, particles? elements that dont pass through levels and dissapear eventually, these also can hold a specific direction they travel in, not automous
-        public Entity(MovingSprite _sprite, int _lifeSpan, int _birth)
+        public Entity(MovingSprite _sprite, int _lifeSpan, int _birth, int spriteNum)
         {
+            spriteInfo[0] = spriteNum;
             sprite = _sprite;
             entityXCheck = new Rectangle(0, 0, sprite.body.Width + 2, sprite.body.Height); ;
             entityYCheck = new Rectangle(0, 0, sprite.body.Width, sprite.body.Height + 2);
@@ -62,14 +72,20 @@ namespace Lighting_Test
             birth = _birth;
 
             immortal = false;
-
+            type = "attack";
         }
 
         public void adjustSpeeds(int time, Rectangle player)
         {
             if (immortal == true)
             {
-                int directionOfPlayer = (player.X - sprite.body.X) / Math.Abs(player.X - sprite.body.X);
+                int directionOfPlayer;
+
+                if (player.X - sprite.body.X != 0)
+                {
+                    directionOfPlayer = (player.X - sprite.body.X) / Math.Abs(player.X - sprite.body.X);
+                }
+                else { directionOfPlayer = 0; }
                 int playerYdistance = (Math.Abs(player.Y - sprite.body.Y));
 
                 if (directionOfPlayer == sprite.xyDirection[x] && playerYdistance < 1000)
@@ -123,106 +139,115 @@ namespace Lighting_Test
         }
         public void moveEntity(List<Rectangle> currentTiles, int currentLevelY, int currentLevelX, Level[][] allLevels)
         {
-            oldSprite = sprite.body;
-
-            #region Move Sprite
-
-            canMoveUpDownLeftRight[up] = 0;
-            canMoveUpDownLeftRight[down] = 0;
-            canMoveUpDownLeftRight[left] = 0;
-            canMoveUpDownLeftRight[right] = 0;
-
-            //Rectangle to check the entities next move
-            Rectangle proposedMove = new Rectangle(sprite.body.X, sprite.body.Y, sprite.body.Width, sprite.body.Height);
-
             //Move the rectangle to be in entities position
             int Xmove = sprite.xyDirection[x] * sprite.xySpeed[x];
             int Ymove = sprite.xyDirection[y] * sprite.xySpeed[y];
 
-            proposedMove.X += Xmove;
-            proposedMove.Y += Ymove;
-
-            //For each tile, does the new move interstect with it?
-            for (int n = 0; n < currentTiles.Count; n++)
+            if (immortal == true)
             {
-                #region UpDownLeftRight
-                //CAN ENTITY GO UP? DOWN? LEFT? RIGHT?
-                if (entityYCheck.IntersectsWith(currentTiles[n]) && allLevels[currentLevelY][currentLevelX].depths[n] == 0)
+                oldSprite = sprite.body;
+
+                #region Move Sprite
+
+                canMoveUpDownLeftRight[up] = 0;
+                canMoveUpDownLeftRight[down] = 0;
+                canMoveUpDownLeftRight[left] = 0;
+                canMoveUpDownLeftRight[right] = 0;
+
+                //Rectangle to check the entities next move
+                Rectangle proposedMove = new Rectangle(sprite.body.X, sprite.body.Y, sprite.body.Width, sprite.body.Height);
+
+
+                proposedMove.X += Xmove;
+                proposedMove.Y += Ymove;
+
+                //For each tile, does the new move interstect with it?
+                for (int n = 0; n < currentTiles.Count; n++)
                 {
-                    //TOP WALL
-                    if (entityYCheck.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && allLevels[currentLevelY][currentLevelX].depths[n + 30] != 0)
+                    #region UpDownLeftRight
+                    //CAN ENTITY GO UP? DOWN? LEFT? RIGHT?
+                    if (entityYCheck.IntersectsWith(currentTiles[n]) && allLevels[currentLevelY][currentLevelX].depths[n] == 0)
                     {
-                        canMoveUpDownLeftRight[up] = -1;
+                        //TOP WALL
+                        if (entityYCheck.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && allLevels[currentLevelY][currentLevelX].depths[n + 30] != 0)
+                        {
+                            canMoveUpDownLeftRight[up] = -1;
+                        }
+                        //BOTTOM WALL
+                        if (entityYCheck.Y <= currentTiles[n].Y && n - 30 >= 0 && allLevels[currentLevelY][currentLevelX].depths[n - 30] != 0)
+                        {
+
+                            canMoveUpDownLeftRight[down] = 1;
+
+                        }
                     }
-                    //BOTTOM WALL
-                    if (entityYCheck.Y <= currentTiles[n].Y && n - 30 >= 0 && allLevels[currentLevelY][currentLevelX].depths[n - 30] != 0)
+                    if (entityXCheck.IntersectsWith(currentTiles[n]) && allLevels[currentLevelY][currentLevelX].depths[n] == 0)
                     {
+                        //LEFT WALL
+                        if (entityXCheck.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && allLevels[currentLevelY][currentLevelX].depths[n + 1] != 0)
+                        {
+                            canMoveUpDownLeftRight[left] = -1;
+                        }
+                        //RIGHT WALL
+                        if (entityXCheck.X <= currentTiles[n].X && n - 1 >= 0 && allLevels[currentLevelY][currentLevelX].depths[n - 1] != 0)
+                        {
+                            canMoveUpDownLeftRight[right] = 1;
+                        }
+                    }
+                    #endregion
 
-                        canMoveUpDownLeftRight[down] = 1;
+                    if (proposedMove.IntersectsWith(currentTiles[n]) && allLevels[currentLevelY][currentLevelX].depths[n] == 0)
+                    {
+                        int Xdistance = Math.Abs((currentTiles[n].X + (currentTiles[n].Width / 2)) - (sprite.body.X + (sprite.body.Width / 2)));
+                        int Ydistance = Math.Abs((currentTiles[n].Y + (currentTiles[n].Height / 2)) - (sprite.body.Y + (sprite.body.Height / 2)));
 
+                        //If the entity would not be where they are supposed to be.. find how far they can go! (if entity is in a wall, how far could they go from their current position before they hit the wall?)
+                        //LEFT WALL
+                        if (sprite.body.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && allLevels[currentLevelY][currentLevelX].depths[n + 1] != 0 && Xdistance > Ydistance)
+                        {
+                            Xmove = (sprite.body.X - (currentTiles[n].Width + currentTiles[n].X)) * -1;
+                        }
+                        //RIGHT WALL
+                        else if (sprite.body.X <= currentTiles[n].X && n - 1 >= 0 && allLevels[currentLevelY][currentLevelX].depths[n - 1] != 0 && Xdistance > Ydistance)
+
+                        {
+                            Xmove = currentTiles[n].X - sprite.body.X - sprite.body.Width;
+                        }
+                        //TOP WALL  
+                        else if (sprite.body.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && allLevels[currentLevelY][currentLevelX].depths[n + 30] != 0 && Xdistance < Ydistance)
+                        {
+                            Ymove = (sprite.body.Y - (currentTiles[n].Y + currentTiles[n].Height)) * -1;
+                        }
+                        //BOTTOM WALL
+                        else if (sprite.body.Y <= currentTiles[n].Y && n - 30 >= 0 && allLevels[currentLevelY][currentLevelX].depths[n - 30] != 0 && Xdistance < Ydistance)
+                        {
+                            Ymove = currentTiles[n].Y - sprite.body.Y - sprite.body.Height;
+                        }
                     }
                 }
-                if (entityXCheck.IntersectsWith(currentTiles[n]) && allLevels[currentLevelY][currentLevelX].depths[n] == 0)
+                //Finally move the entity to adjusted position.
+
+                if (sprite.xyDirection[x] != canMoveUpDownLeftRight[left] && sprite.xyDirection[x] != canMoveUpDownLeftRight[right])
                 {
-                    //LEFT WALL
-                    if (entityXCheck.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && allLevels[currentLevelY][currentLevelX].depths[n + 1] != 0)
-                    {
-                        canMoveUpDownLeftRight[left] = -1;
-                    }
-                    //RIGHT WALL
-                    if (entityXCheck.X <= currentTiles[n].X && n - 1 >= 0 && allLevels[currentLevelY][currentLevelX].depths[n - 1] != 0)
-                    {
-                        canMoveUpDownLeftRight[right] = 1;
-                    }
+                    sprite.body.X += Xmove;
                 }
+
+                if (sprite.xyDirection[y] != canMoveUpDownLeftRight[up] && sprite.xyDirection[y] != canMoveUpDownLeftRight[down])
+                {
+                    sprite.body.Y += Ymove;
+                }
+
                 #endregion
 
-                if (proposedMove.IntersectsWith(currentTiles[n]) && allLevels[currentLevelY][currentLevelX].depths[n] == 0)
-                {
-                    int Xdistance = Math.Abs((currentTiles[n].X + (currentTiles[n].Width / 2)) - (sprite.body.X + (sprite.body.Width / 2)));
-                    int Ydistance = Math.Abs((currentTiles[n].Y + (currentTiles[n].Height / 2)) - (sprite.body.Y + (sprite.body.Height / 2)));
-
-                    //If the entity would not be where they are supposed to be.. find how far they can go! (if entity is in a wall, how far could they go from their current position before they hit the wall?)
-                    //LEFT WALL
-                    if (sprite.body.X >= currentTiles[n].X && n + 1 <= currentTiles.Count && allLevels[currentLevelY][currentLevelX].depths[n + 1] != 0 && Xdistance > Ydistance)
-                    {
-                        Xmove = (sprite.body.X - (currentTiles[n].Width + currentTiles[n].X)) * -1;
-                    }
-                    //RIGHT WALL
-                    else if (sprite.body.X <= currentTiles[n].X && n - 1 >= 0 && allLevels[currentLevelY][currentLevelX].depths[n - 1] != 0 && Xdistance > Ydistance)
-
-                    {
-                        Xmove = currentTiles[n].X - sprite.body.X - sprite.body.Width;
-                    }
-                    //TOP WALL  
-                    else if (sprite.body.Y >= currentTiles[n].Y && n + 30 <= currentTiles.Count && allLevels[currentLevelY][currentLevelX].depths[n + 30] != 0 && Xdistance < Ydistance)
-                    {
-                        Ymove = (sprite.body.Y - (currentTiles[n].Y + currentTiles[n].Height)) * -1;
-                    }
-                    //BOTTOM WALL
-                    else if (sprite.body.Y <= currentTiles[n].Y && n - 30 >= 0 && allLevels[currentLevelY][currentLevelX].depths[n - 30] != 0 && Xdistance < Ydistance)
-                    {
-                        Ymove = currentTiles[n].Y - sprite.body.Y - sprite.body.Height;
-                    }
-                }
+                //Tracking entity accessories
+                entityXCheck.Location = new Point(sprite.body.X - 1, sprite.body.Y);
+                entityYCheck.Location = new Point(sprite.body.X, sprite.body.Y - 1);
             }
-            //Finally move the entity to adjusted position.
-
-            if (sprite.xyDirection[x] != canMoveUpDownLeftRight[left] && sprite.xyDirection[x] != canMoveUpDownLeftRight[right])
+            else 
             {
-                sprite.body.X += Xmove;
+            sprite.body.X += Xmove;
+            sprite.body.Y += Ymove;
             }
-
-            if (sprite.xyDirection[y] != canMoveUpDownLeftRight[up] && sprite.xyDirection[y] != canMoveUpDownLeftRight[down])
-            {
-                sprite.body.Y += Ymove;
-            }
-
-            #endregion
-
-            //Tracking entity accessories
-            entityXCheck.Location = new Point(sprite.body.X - 1, sprite.body.Y);
-            entityYCheck.Location = new Point(sprite.body.X, sprite.body.Y - 1);
         }
         void newJump(int time)
         {

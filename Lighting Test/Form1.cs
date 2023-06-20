@@ -13,12 +13,20 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Media;
 
 
 namespace Lighting_Test
 {
     public partial class Form1 : Form
     {
+        string gameState;
+        //MainMenu - "To Exit press "Escape"" "To Play press "Enter"."
+        //Gaming - game timer is true 
+        //DeathMenu - "Respawn at last checkpoint - "Enter". Exit - "Escape"."
+
+        SoundPlayer Sound = new SoundPlayer(Properties.Resources.Sound);
+
         #region GLOBAL VARIABLES
         //Shorthand
         int x = 0;
@@ -1078,22 +1086,26 @@ namespace Lighting_Test
         #region Load
         public Form1()
         {
-
             InitializeComponent();
             player = new Rectangle(580, 320, 0, 0);
-            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 100, 220, 40, 10, 0));
-            lightList.Add(new Light(new Rectangle(580, 320, 0, 0), new int[] { 0, -60, -180 }, 10, 10, 10, 10, 0));
             playerXCheck = new Rectangle(0, 0, 0, 0);
             playerYCheck = new Rectangle(0, 0, 0, 0);
             createLevel();
 
             stopwatch.Start();
+
         }
         #endregion
 
         #region Game Timer
         private void gameTimer_Tick(object sender, EventArgs e)
         {
+            if (stopwatch.ElapsedMilliseconds < 300 && stopwatch.ElapsedMilliseconds > 200)
+            {
+                UpdateGameState("MainMenu");
+                return;
+            }
+
             #region Adding Atmospheric Moving Sprites
             //Add vines or plants growing!
             if (random.Next(0, 101) > chanceOfSpawn && movingSprites.Count < maxSprites)
@@ -1329,8 +1341,11 @@ namespace Lighting_Test
             playerYCheck.Location = new Point(player.X, player.Y - 1);
             lightList[0].body.Location = new Point(player.X + (player.Width / 2), player.Y + (player.Width / 2));
 
-            //My info
-            levelRenderer(false);
+            //Redraw Level, but if the game state has changed make sure to not redraw over top
+            if (gameState == "Gaming")
+            {
+                levelRenderer(false);
+            }
 
             //Move Moving Sprites
             for (int i = 0; i < movingSprites.Count; i++)
@@ -1352,6 +1367,17 @@ namespace Lighting_Test
         {
             //Check all keys and if they are down set the boolian value to true
             checkKey(true, e);
+
+            if (e.KeyCode == Keys.Escape && gameState != "Gaming")
+            {
+                Application.Exit();
+            }
+
+            if (e.KeyCode == Keys.Enter && gameState != "Gaming")
+            {
+                UpdateGameState("Gaming");
+                Respawn();
+            }
         }
 
         private void Form1_KeyUp(object sender, KeyEventArgs e)
@@ -1369,9 +1395,10 @@ namespace Lighting_Test
                     WSAD[i] = trueOrFalse;
                 }
             }
+
+
         }
         #endregion
-
         #region Create Level
         private void createLevel()
         {
@@ -1848,6 +1875,8 @@ namespace Lighting_Test
                     Convert.ToInt32(stopwatch.ElapsedMilliseconds),
                     2
                     ));
+
+            Sound.Play();
         }
 
         private void Form1_MouseClick(object sender, MouseEventArgs e)
@@ -1979,13 +2008,8 @@ namespace Lighting_Test
                     //Intersections (with player)
                     if (currentEntities[f].sprite.body.IntersectsWith(player) && currentEntities[f].immortal == true && stopwatch.ElapsedMilliseconds - previousImmunity > immunityFrames)
                     {
-                        currentLevelX = playerSpawnLevel[x];
-                        currentLevelY = playerSpawnLevel[y];
-                        createLevel();
-                        player.Location = playerSpawn;
-
-                        redrawList.Add(player);
-                        break;
+                        UpdateGameState("DeathMenu");
+                        return;
                     }
 
                     //Intersections (with projectiles)
@@ -2081,7 +2105,7 @@ namespace Lighting_Test
             }
         }
 
-        void drawBulletCount() 
+        void drawBulletCount()
         {
             string bulletCount = $"x{shots}";
             Point position = new Point(player.Location.X, player.Y);
@@ -2089,6 +2113,75 @@ namespace Lighting_Test
             label1.Size = player.Size;
             label1.Location = player.Location;
 
+        }
+
+        void Respawn()
+        {
+            Rectangle oldPlayer = player;
+
+            currentLevelX = playerSpawnLevel[x];
+            currentLevelY = playerSpawnLevel[y];
+            createLevel();
+            player.Location = playerSpawn;
+
+            redrawList.Add(oldPlayer);
+        }
+
+        void UpdateGameState(string state)
+        {
+
+            gameState = state;
+
+            //baller -Hark
+            if (state == "DeathMenu")
+            {
+                label1.Visible = false;
+                gameTimer.Enabled = false;
+
+                for (int x = 0; x < 10; x++) { e.FillRectangle(new SolidBrush(Color.FromArgb(50, 0, 0, 0)), new Rectangle(0, 0, this.Width, this.Height)); }
+
+                string text = "Respawn at last checkpoint - \"Enter\".\nExit - \"Escape\".\nDefeat Enemies for BULLETS.";
+                Font font = new Font("Bitter", this.Width / (text.Length / 3), FontStyle.Bold);
+                for (int x = 0; x < 2; x++)
+                {
+                    e.DrawString(text, font, new SolidBrush(Color.FromArgb(50, 255, 255, 255)), 0, this.Height / 2);
+                }
+
+
+                text = "YOU DIED";
+                font = new Font("Bitter", this.Width / (text.Length), FontStyle.Bold);
+                for (int x = 0; x < 2; x++)
+                {
+                    e.DrawString(text, font, new SolidBrush(Color.FromArgb(50, 255, 255, 255)), 0, 10);
+                }
+            }
+            else if (state == "MainMenu")
+            {
+                label1.Visible = false;
+                gameTimer.Enabled = false;
+
+                for (int x = 0; x < 10; x++) { e.FillRectangle(new SolidBrush(Color.FromArgb(50, 0, 0, 0)), new Rectangle(0, 0, this.Width, this.Height)); }
+
+                string text = "Move - W A S D.\nAttack - Left Clicks.\nCharge - Hold Left.";
+                Font font = new Font("Bitter", this.Width / (text.Length / 3), FontStyle.Bold);
+                for (int x = 0; x < 2; x++)
+                {
+                    e.DrawString(text, font, new SolidBrush(Color.FromArgb(50, 255, 255, 255)), 0, this.Height / 2);
+                }
+
+
+                text = "EXPLORATION GAME";
+                font = new Font("Bitter", this.Width / (text.Length), FontStyle.Bold);
+                for (int x = 0; x < 2; x++)
+                {
+                    e.DrawString(text, font, new SolidBrush(Color.FromArgb(50, 255, 255, 255)), 0, 10);
+                }
+            }
+            else
+            {
+                gameTimer.Enabled = true;
+                label1.Visible = true;
+            }
         }
     }
 }

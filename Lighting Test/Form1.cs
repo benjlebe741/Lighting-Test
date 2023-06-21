@@ -1402,6 +1402,13 @@ namespace Lighting_Test
         #region Create Level
         private void createLevel()
         {
+            //sample checkpoint code, this wouldnt be final but it shows how the respawn point can change.
+            if (currentLevelX == 3 && currentLevelY == 0 && playerSpawnLevel[1] == 0) 
+            {
+                playerSpawnLevel = new int[] { currentLevelX, currentLevelY };
+                playerSpawn = new Point(300,200);
+            }
+                
             Level level = allLevels[currentLevelY][currentLevelX];
 
 

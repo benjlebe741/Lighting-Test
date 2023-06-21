@@ -2162,7 +2162,7 @@ namespace Lighting_Test
 
                 for (int x = 0; x < 10; x++) { e.FillRectangle(new SolidBrush(Color.FromArgb(50, 0, 0, 0)), new Rectangle(0, 0, this.Width, this.Height)); }
 
-                string text = "Move - W A S D.\nAttack - Left Clicks.\nCharge - Hold Left.";
+                string text = "Move - W A S D.\nAttack - Left Clicks.\nCharge - Hold Left.\nPlay - Enter\nExit - Escape";
                 Font font = new Font("Bitter", this.Width / (text.Length / 3), FontStyle.Bold);
                 for (int x = 0; x < 2; x++)
                 {

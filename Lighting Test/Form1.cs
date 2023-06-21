@@ -63,7 +63,6 @@ namespace Lighting_Test
 
         int largestSize, largestSubtraction, redAddition, greenAddition, blueAddition, bioluminescenceSize, sampleSuppressor, chanceOfSpawn, chanceOfRemoval;
 
-
         int sampleSpriteSize;
         Color sampleColor;
 
@@ -135,7 +134,7 @@ namespace Lighting_Test
 
         Stopwatch stopwatch = new Stopwatch();
         #endregion
-
+        //Bulk storage, this is about 1000 lines on its own- maybe making a text file would be better than having it all here? but im not sure?
         #region ALL LEVELS
         Level[][] allLevels = new Level[][]
         {
@@ -1087,6 +1086,7 @@ namespace Lighting_Test
         public Form1()
         {
             InitializeComponent();
+            //place in the player and their boundaries; in the future I would want to make the player another instnace of an entity class, because it shares all the same features. It just would take a little bit more time to do, but would cut my code repetition back a lot.
             player = new Rectangle(580, 320, 0, 0);
             playerXCheck = new Rectangle(0, 0, 0, 0);
             playerYCheck = new Rectangle(0, 0, 0, 0);
@@ -1100,6 +1100,7 @@ namespace Lighting_Test
         #region Game Timer
         private void gameTimer_Tick(object sender, EventArgs e)
         {
+            //Display the main menu text, there could be a better way to do this so I'm not repeating this check when its not neccessary.
             if (stopwatch.ElapsedMilliseconds < 300 && stopwatch.ElapsedMilliseconds > 200)
             {
                 UpdateGameState("MainMenu");
@@ -1107,20 +1108,20 @@ namespace Lighting_Test
             }
 
             #region Adding Atmospheric Moving Sprites
-            //Add vines or plants growing!
+            //Add vines or plants growing if there are not too many vines on screen already!
             if (random.Next(0, 101) > chanceOfSpawn && movingSprites.Count < maxSprites)
-            {
+            {   //Makes a random size, color, and location for a vine to drop down.
                 sampleSpriteSize = random.Next(0, largestSize) / random.Next(1, largestSubtraction);
                 int smallerSize = sampleSpriteSize / random.Next(2, 8);
                 int red = random.Next(0, redAddition);
                 int green = random.Next(0, greenAddition);
                 int blue = random.Next(0, blueAddition);
                 int yLoc = 0;
-
+                //Adds the vines to the vines list.
                 movingSprites.Add(new MovingSprite(new Rectangle(random.Next(0, this.Width - sampleSpriteSize), yLoc, sampleSpriteSize, sampleSpriteSize), new int[] { 0, random.Next(1, 18) }, new int[] { 0, 1 }, Color.FromArgb(red, green, blue), random.Next(-3, 13)));
                 movingSprites.Add(new MovingSprite(new Rectangle(random.Next(0, this.Width - smallerSize), yLoc - smallerSize, smallerSize, smallerSize), new int[] { 0, random.Next(1, 18) }, new int[] { 0, 1 }, Color.FromArgb(red / 2, green / 2, blue / 2), random.Next(-3, 13)));
             }
-
+            //Remove vines occassionally from the list
             if (random.Next(0, 101) > chanceOfRemoval && movingSprites.Count > 0)
             {
                 if (movingSprites[0].body.Width > 16 && movingSprites.Count < maxSprites)
@@ -1179,7 +1180,7 @@ namespace Lighting_Test
 
             #endregion
             #region Determing All Object Directions
-            //Determening player directions depending on what keys are pressed:
+            //Determening player directions depending on what keys are pressed: this could all be simplified with the use of lists of data like I did in my air hockey game.
             if (WSAD[left] == true && WSAD[right] == false)
             {
                 xYDirection[x] = -1;
@@ -1193,12 +1194,10 @@ namespace Lighting_Test
                 xYDirection[x] = 0;
             }
             #endregion
-
-
             #region Entities with for loop
             moveEntities();
             #endregion
-            //Frame updates
+            #region Frame updates
             if (stopwatch.ElapsedMilliseconds > lastFrameUpdate + frameUpdateInterval)
             {
                 lastFrameUpdate = stopwatch.ElapsedMilliseconds;
@@ -1213,8 +1212,9 @@ namespace Lighting_Test
                     }
                 }
             }
+            #endregion
 
-            #region Move Player TRY 2
+            #region Move Player Final Try
 
             canMoveUpDownLeftRight[up] = 0;
             canMoveUpDownLeftRight[down] = 0;
@@ -1236,6 +1236,7 @@ namespace Lighting_Test
             {
                 #region UpDownLeftRight
                 //CAN PLAYER GO UP DOWN LEFT RIGHT
+                //This whole section uses a lot of repeated code, this could also be reduced with use of lists like I did in air hockey.
                 if (playerYCheck.IntersectsWith(currentTiles[n]) && allLevels[currentLevelY][currentLevelX].depths[n] == 0)
                 {
                     //TOP WALL
@@ -1403,12 +1404,12 @@ namespace Lighting_Test
         private void createLevel()
         {
             //sample checkpoint code, this wouldnt be final but it shows how the respawn point can change.
-            if (currentLevelX == 3 && currentLevelY == 0 && playerSpawnLevel[1] == 0) 
+            if (currentLevelX == 3 && currentLevelY == 0 && playerSpawnLevel[1] == 0)
             {
                 playerSpawnLevel = new int[] { currentLevelX, currentLevelY };
-                playerSpawn = new Point(300,200);
+                playerSpawn = new Point(300, 200);
             }
-                
+
             Level level = allLevels[currentLevelY][currentLevelX];
 
 
